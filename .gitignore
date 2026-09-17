@@ -1,0 +1,36 @@
+# Flutter/Dart/Pub specific
+.dart_tool
+.pub-build/
+.pub/
+build
+
+# IDE specific
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Environment and Secrets (Crucial!)
+.env
+*.pem
+*.p12
+*.jks
+key.properties
+
+# Coverage and testing
+coverage/
+test/rust_builder/output/ # If using custom native integrations
