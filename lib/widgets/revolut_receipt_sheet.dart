@@ -132,9 +132,9 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                 // Receipt Header
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: AppColors.primaryGradient,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: Column(
                     children: [

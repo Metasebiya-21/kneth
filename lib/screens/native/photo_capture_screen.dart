@@ -221,9 +221,9 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> with WidgetsBin
                 child: const Icon(Icons.no_photography_rounded, color: AppColors.error, size: 36),
               ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Camera Unavailable',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(_errorMsg!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
@@ -308,7 +308,7 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> with WidgetsBin
           builder: (context, child) {
             return IgnorePointer(
               child: Container(
-                color: Colors.white.withOpacity(_flashAnimation.value),
+                color: Colors.white.withValues(alpha: _flashAnimation.value),
               ),
             );
           },
