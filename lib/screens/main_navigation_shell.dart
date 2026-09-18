@@ -6,11 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/flow_controller.dart';
 import '../models/flow_manifest.dart';
 import '../services/api_client.dart';
+import '../theme/app_colors.dart';
 import 'flow_screen.dart';
-import 'tabs/analytics_vault_tab.dart';
-import 'tabs/case_history_tab.dart';
-import 'tabs/terminal_home_tab.dart';
-import 'tabs/workflow_catalog_tab.dart';
+import 'tabs/home_tab.dart';
+import 'tabs/workflows_tab.dart';
+import 'tabs/activity_tab.dart';
+import 'tabs/settings_tab.dart';
 
 class MainNavigationShell extends StatefulWidget {
   final ApiClient? apiClient;
@@ -164,7 +165,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -184,16 +185,23 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(Icons.dns_rounded, color: Color(0xFF059669), size: 24),
-                        SizedBox(width: 10),
-                        Flexible(
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.dns_rounded, color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Flexible(
                           child: Text(
-                            'SDUI Backend Gateway',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                            'Backend Gateway',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -202,7 +210,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -210,8 +218,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Select a preset gateway endpoint or enter your live server address for dynamic stage schemas.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+                'Select a preset or enter your server address.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 14),
 
@@ -221,22 +229,22 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 children: [
                   _gatewayChip('Production', 'https://api.kifiya.et', controller),
                   _gatewayChip('Staging', 'https://staging.kifiya.et', controller),
-                  _gatewayChip('Local Wi-Fi ADB', 'http://192.168.8.9:8080', controller),
+                  _gatewayChip('Local', 'http://192.168.8.9:8080', controller),
                 ],
               ),
               const SizedBox(height: 16),
 
               TextField(
                 controller: controller,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5, color: AppColors.textPrimary),
                 decoration: InputDecoration(
-                  labelText: 'Active Base URL',
+                  labelText: 'Base URL',
                   hintText: 'https://api.kifiya.et',
-                  prefixIcon: const Icon(Icons.link_rounded, color: Color(0xFF059669)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  prefixIcon: const Icon(Icons.link_rounded, color: AppColors.primary),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFF059669), width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
               ),
@@ -244,13 +252,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 3,
-                  ),
                   onPressed: () async {
                     final newUrl = controller.text.trim();
                     if (newUrl.isNotEmpty) {
@@ -265,7 +266,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                       await _loadCatalogAndDrafts();
                     }
                   },
-                  child: const Text('Save & Reconnect Gateway', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  child: const Text('Save & Reconnect', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                 ),
               ),
             ],
@@ -276,10 +277,21 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 
   Widget _gatewayChip(String label, String url, TextEditingController controller) {
+    final isActive = controller.text == url;
     return ActionChip(
-      label: Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-      backgroundColor: const Color(0xFFF1F5F9),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: isActive ? AppColors.primary : AppColors.textSecondary,
+        ),
+      ),
+      backgroundColor: isActive ? AppColors.primaryLight : AppColors.surfaceDim,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: isActive ? AppColors.primary : AppColors.border),
+      ),
       onPressed: () => setState(() => controller.text = url),
     );
   }
@@ -287,165 +299,80 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: const Color(0xFFF8FAFC),
-        titleSpacing: 18,
-        title: GestureDetector(
-          onLongPress: _showBackendConfigSheet,
-          behavior: HitTestBehavior.opaque,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF059669), Color(0xFF10B981)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x22059669),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.hub_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Kifiya Terminal',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16.5,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  Text(
-                    'Server-Driven Engine',
-                    style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Sync Flows',
-            icon: _isLoadingCatalog
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF059669)),
-                  )
-                : const Icon(Icons.sync_rounded, color: Color(0xFF475569), size: 22),
-            onPressed: _loadCatalogAndDrafts,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      backgroundColor: AppColors.background,
       body: PageView(
         controller: _pageController,
         physics: const BouncingScrollPhysics(),
         onPageChanged: (idx) => setState(() => _currentIndex = idx),
         children: [
-          TerminalHomeTab(
+          HomeTab(
             flows: _flows,
             activeDrafts: _activeDrafts,
             onStartFlow: _startFlow,
             onResumeFlow: _resumeFlow,
             onDiscardDraft: _discardDraft,
-            onOpenHistory: () => _navigateToTab(3),
+            onOpenHistory: () => _navigateToTab(2),
             onOpenCatalog: () => _navigateToTab(1),
             onOpenGatewayConfig: _showBackendConfigSheet,
           ),
-          WorkflowCatalogTab(
+          WorkflowsTab(
             flows: _flows,
             onStartFlow: _startFlow,
             onRefresh: _loadCatalogAndDrafts,
             isLoading: _isLoadingCatalog,
           ),
-          AnalyticsVaultTab(
-            activeDraftCount: _activeDrafts.length,
-            onForceSync: _loadCatalogAndDrafts,
-            onOpenGatewayConfig: _showBackendConfigSheet,
-          ),
-          CaseHistoryTab(
+          ActivityTab(
             activeDrafts: _activeDrafts,
             onResumeFlow: _resumeFlow,
             onDiscardDraft: _discardDraft,
           ),
+          SettingsTab(
+            activeDraftCount: _activeDrafts.length,
+            onForceSync: _loadCatalogAndDrafts,
+            onOpenGatewayConfig: _showBackendConfigSheet,
+          ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: _buildFloatingBottomDock(),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _navItem(index: 0, icon: Icons.home_rounded, activeIcon: Icons.home_rounded, label: 'Home'),
+              _navItem(index: 1, icon: Icons.grid_view_rounded, activeIcon: Icons.grid_view_rounded, label: 'Workflows'),
+              _navItem(
+                index: 2,
+                icon: Icons.receipt_long_outlined,
+                activeIcon: Icons.receipt_long_rounded,
+                label: 'Activity',
+                badgeCount: _activeDrafts.isNotEmpty ? _activeDrafts.length : null,
+              ),
+              _navItem(index: 3, icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings'),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFloatingBottomDock() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withAlpha(245),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withAlpha(25), width: 1.2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x330F172A),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _navDockItem(
-            index: 0,
-            icon: Icons.flash_on_rounded,
-            label: 'Terminal',
-          ),
-          _navDockItem(
-            index: 1,
-            icon: Icons.layers_rounded,
-            label: 'Catalog',
-          ),
-          _navDockItem(
-            index: 2,
-            icon: Icons.shield_rounded,
-            label: 'Vault',
-          ),
-          _navDockItem(
-            index: 3,
-            icon: Icons.receipt_long_rounded,
-            label: 'Records',
-            badgeCount: _activeDrafts.isNotEmpty ? _activeDrafts.length : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _navDockItem({
+  Widget _navItem({
     required int index,
     required IconData icon,
+    required IconData activeIcon,
     required String label,
     int? badgeCount,
   }) {
@@ -453,56 +380,43 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return InkWell(
       onTap: () => _navigateToTab(index),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF059669) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF059669).withAlpha(120),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          color: isSelected ? AppColors.primaryLight : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Stack(
               clipBehavior: Clip.none,
               children: [
                 Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected ? Colors.white : Colors.white60,
+                  isSelected ? activeIcon : icon,
+                  size: 22,
+                  color: isSelected ? AppColors.primary : AppColors.textMuted,
                 ),
                 if (badgeCount != null)
                   Positioned(
-                    right: -6,
+                    right: -8,
                     top: -4,
                     child: Container(
                       padding: const EdgeInsets.all(3),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF59E0B),
+                        color: AppColors.warning,
                         shape: BoxShape.circle,
                       ),
-                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                       child: Text(
                         '$badgeCount',
                         style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -510,17 +424,15 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   ),
               ],
             ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppColors.primary : AppColors.textMuted,
               ),
-            ],
+            ),
           ],
         ),
       ),

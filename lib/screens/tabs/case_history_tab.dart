@@ -90,7 +90,7 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0F172A),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -110,7 +110,6 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Receipt #${record['id']} verified & exported.'),
-                    backgroundColor: const Color(0xFF059669),
                   ),
                 );
               },
@@ -148,14 +147,14 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
+                color: Color(0xFFE2E8F0),
                 letterSpacing: -0.5,
               ),
             ),
             SizedBox(height: 2),
             Text(
               'Complete field registration audit trail',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -168,18 +167,18 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.history_rounded, size: 18, color: Color(0xFFD97706)),
+                  Icon(Icons.history_rounded, size: 18, color: Color(0xFFFBBF24)),
                   SizedBox(width: 6),
-                  Text('Paused Offline Drafts', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A))),
+                  Text('Paused Offline Drafts', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFFE2E8F0))),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
+                  color: const Color(0xFFFEF3C7).withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('${drafts.length} Saved', style: const TextStyle(color: Color(0xFFB45309), fontSize: 11, fontWeight: FontWeight.bold)),
+                child: Text('${drafts.length} Saved', style: const TextStyle(color: Color(0xFFFBBF24), fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -198,16 +197,16 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
                 label: Text(tab),
                 selected: isSel,
                 onSelected: (_) => setState(() => _filter = tab),
-                selectedColor: const Color(0xFF0F172A),
+                selectedColor: const Color(0xFF34D399),
                 labelStyle: TextStyle(
-                  color: isSel ? Colors.white : const Color(0xFF475569),
+                  color: isSel ? const Color(0xFF06281B) : const Color(0xFFCBD5E1),
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
-                backgroundColor: Colors.white,
+                backgroundColor: const Color(0xFF1E293B),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: isSel ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)),
+                  side: BorderSide(color: isSel ? const Color(0xFF34D399) : const Color(0xFF334155)),
                 ),
               ),
             );
@@ -218,12 +217,12 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
         // Completed Records List
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: const Color(0xFF334155)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x040F172A),
+                color: Color(0x33000000),
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),
@@ -244,7 +243,7 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                    border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFF334155))),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -252,10 +251,10 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
+                          color: const Color(0xFF064E3B),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF059669), size: 20),
+                        child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF34D399), size: 20),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -265,12 +264,12 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
                           children: [
                             Text(
                               rec['name'] as String,
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFFE2E8F0)),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${rec['type']} • ${rec['time']}',
-                              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5),
                             ),
                           ],
                         ),
@@ -282,12 +281,12 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFECFDF5),
+                              color: const Color(0xFF064E3B),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               rec['status'] as String,
-                              style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.w800, fontSize: 10.5),
+                              style: const TextStyle(color: Color(0xFF6EE7B7), fontWeight: FontWeight.w800, fontSize: 10.5),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -310,12 +309,12 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(color: const Color(0xFFB45309).withAlpha(140)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x060F172A),
+            color: Color(0x33000000),
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
@@ -327,10 +326,10 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
+              color: const Color(0xFFFEF3C7).withAlpha(25),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.edit_note_rounded, color: Color(0xFFD97706), size: 24),
+            child: const Icon(Icons.edit_note_rounded, color: Color(0xFFFBBF24), size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -340,10 +339,10 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
               children: [
                 Text(
                   draft.manifest.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFE2E8F0)),
                 ),
                 const SizedBox(height: 2),
-                Text('Paused at ${draft.progressLabel}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                Text('Paused at ${draft.progressLabel}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
               ],
             ),
           ),
@@ -354,8 +353,8 @@ class _CaseHistoryTabState extends State<CaseHistoryTab> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
-              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFF34D399),
+              foregroundColor: const Color(0xFF06281B),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),

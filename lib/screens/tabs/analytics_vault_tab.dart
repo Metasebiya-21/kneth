@@ -30,20 +30,20 @@ class AnalyticsVaultTab extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: Color(0xFFE2E8F0),
                     letterSpacing: -0.5,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Field telemetry & encrypted cache',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
             IconButton(
               tooltip: 'Gateway Settings',
-              icon: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF475569)),
+              icon: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF94A3B8)),
               onPressed: onOpenGatewayConfig,
             ),
           ],
@@ -76,9 +76,9 @@ class AnalyticsVaultTab extends StatelessWidget {
                   title: 'Cases Verified',
                   value: '18',
                   badgeText: '+24%',
-                  badgeColor: const Color(0xFF10B981),
+                  badgeColor: const Color(0xFF34D399),
                   icon: Icons.check_circle_rounded,
-                  iconColor: const Color(0xFF059669),
+                  iconColor: const Color(0xFF34D399),
                   subtext: 'Target 20/day',
                 ),
               ),
@@ -88,9 +88,9 @@ class AnalyticsVaultTab extends StatelessWidget {
                   title: 'Gateway SLA',
                   value: '99.8%',
                   badgeText: 'Optimal',
-                  badgeColor: const Color(0xFF0284C7),
+                  badgeColor: const Color(0xFF38BDF8),
                   icon: Icons.cloud_done_rounded,
-                  iconColor: const Color(0xFF0284C7),
+                  iconColor: const Color(0xFF38BDF8),
                   subtext: '45ms latency',
                 ),
               ),
@@ -107,9 +107,9 @@ class AnalyticsVaultTab extends StatelessWidget {
                   title: 'Offline Vault',
                   value: 'Ready',
                   badgeText: 'Encrypted',
-                  badgeColor: const Color(0xFF8B5CF6),
+                  badgeColor: const Color(0xFFA78BFA),
                   icon: Icons.shield_rounded,
-                  iconColor: const Color(0xFF8B5CF6),
+                  iconColor: const Color(0xFFA78BFA),
                   subtext: 'Zero data loss',
                 ),
               ),
@@ -119,9 +119,9 @@ class AnalyticsVaultTab extends StatelessWidget {
                   title: 'Pending Drafts',
                   value: '$activeDraftCount',
                   badgeText: activeDraftCount == 0 ? 'Clean' : 'Resume',
-                  badgeColor: activeDraftCount == 0 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                  badgeColor: activeDraftCount == 0 ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
                   icon: Icons.pending_actions_rounded,
-                  iconColor: const Color(0xFFD97706),
+                  iconColor: const Color(0xFFFBBF24),
                   subtext: 'Local storage',
                 ),
               ),
@@ -144,12 +144,12 @@ class AnalyticsVaultTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFF334155)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x040F172A),
+            color: Color(0x33000000),
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
@@ -193,14 +193,14 @@ class AnalyticsVaultTab extends StatelessWidget {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: Color(0xFFE2E8F0),
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 2),
-          Text(title, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+          Text(title, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8))),
           const SizedBox(height: 2),
-          Text(subtext, style: TextStyle(fontSize: 10, color: Colors.grey.shade400, fontWeight: FontWeight.w500)),
+          Text(subtext, style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -210,12 +210,12 @@ class AnalyticsVaultTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFF334155)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x060F172A),
+            color: Color(0x33000000),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),
@@ -229,28 +229,28 @@ class AnalyticsVaultTab extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.lock_clock_rounded, color: Color(0xFF8B5CF6), size: 20),
+                  Icon(Icons.lock_clock_rounded, color: Color(0xFFA78BFA), size: 20),
                   SizedBox(width: 8),
                   Text(
                     'Offline Encrypted Vault',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFFE2E8F0)),
                   ),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8FF),
+                  color: const Color(0xFF4C1D95).withAlpha(60),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('AES-256 GCM', style: TextStyle(color: Color(0xFF7E22CE), fontWeight: FontWeight.w800, fontSize: 10.5)),
+                child: const Text('AES-256 GCM', style: TextStyle(color: Color(0xFFC4B5FD), fontWeight: FontWeight.w800, fontSize: 10.5)),
               ),
             ],
           ),
           const SizedBox(height: 12),
           const Text(
             'All biometrics, Fayda lookups, and customer declarations are encrypted locally before transmission.',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 12, height: 1.4),
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: 16),
           _storageRow('Customer Form Declarations', '18 Records', Icons.description_outlined),
@@ -261,8 +261,8 @@ class AnalyticsVaultTab extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F172A),
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFF34D399),
+                foregroundColor: const Color(0xFF06281B),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -272,7 +272,6 @@ class AnalyticsVaultTab extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Vault synchronized: all local artifacts verified and flush queue clean.'),
-                    backgroundColor: Color(0xFF059669),
                   ),
                 );
               },
@@ -291,12 +290,12 @@ class AnalyticsVaultTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: const Color(0xFF64748B)),
+              Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
               const SizedBox(width: 8),
-              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFCBD5E1))),
             ],
           ),
-          Text(count, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+          Text(count, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFE2E8F0))),
         ],
       ),
     );
@@ -306,23 +305,23 @@ class AnalyticsVaultTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFF334155)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.wifi_tethering_rounded, color: Color(0xFF0284C7), size: 18),
+              Icon(Icons.wifi_tethering_rounded, color: Color(0xFF38BDF8), size: 18),
               SizedBox(width: 8),
-              Text('Network Diagnostics', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF0F172A))),
+              Text('Network Diagnostics', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFFE2E8F0))),
             ],
           ),
           const SizedBox(height: 10),
-          _diagItem('Gateway Handshake', '200 OK • 42ms', const Color(0xFF10B981)),
-          _diagItem('NID Program Gateway', 'Live & Synchronized', const Color(0xFF10B981)),
+          _diagItem('Gateway Handshake', '200 OK • 42ms', const Color(0xFF34D399)),
+          _diagItem('NID Program Gateway', 'Live & Synchronized', const Color(0xFF34D399)),
           _diagItem('Offline Fallback Queue', 'Active (0 Delayed)', const Color(0xFF64748B)),
         ],
       ),
@@ -335,7 +334,7 @@ class AnalyticsVaultTab extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500)),
           Text(val, style: TextStyle(fontSize: 11.5, color: statusColor, fontWeight: FontWeight.w700)),
         ],
       ),

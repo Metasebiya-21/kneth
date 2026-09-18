@@ -1,280 +1,248 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:signature/signature.dart';
 
 import '../../controllers/flow_controller.dart';
 import '../../models/stage_config.dart';
-import '../../services/media_storage.dart';
+import '../../theme/app_colors.dart';
 import '../../widgets/stripe_identity_stepper.dart';
 
 class SignatureCaptureScreen extends StatefulWidget {
   final FlowController controller;
   final StageConfig stage;
 
-  const SignatureCaptureScreen({super.key, required this.controller, required this.stage});
+  const SignatureCaptureScreen({
+    super.key,
+    required this.controller,
+    required this.stage,
+  });
 
   @override
   State<SignatureCaptureScreen> createState() => _SignatureCaptureScreenState();
 }
 
 class _SignatureCaptureScreenState extends State<SignatureCaptureScreen> {
-  final GlobalKey _boundaryKey = GlobalKey();
-  final List<List<Offset>> _strokes = [];
-  bool _saving = false;
+  late SignatureController _signatureController;
+  bool _isProcessing = false;
 
-  bool get _isEmpty => _strokes.isEmpty;
-
-  void _onPanStart(DragStartDetails details) {
-    setState(() => _strokes.add([details.localPosition]));
+  @override
+  void initState() {
+    super.initState();
+    _signatureController = SignatureController(
+      penStrokeWidth: 4,
+      penColor: AppColors.textPrimary,
+      exportBackgroundColor: Colors.transparent,
+      exportPenColor: Colors.black,
+      onDrawEnd: () => setState(() {}),
+    );
   }
 
-  void _onPanUpdate(DragUpdateDetails details) {
-    setState(() => _strokes.last.add(details.localPosition));
+  @override
+  void dispose() {
+    _signatureController.dispose();
+    super.dispose();
   }
 
-  void _clear() => setState(() => _strokes.clear());
+  Future<void> _saveSignature() async {
+    if (_signatureController.isEmpty) return;
 
-  void _undo() {
-    if (_strokes.isNotEmpty) {
-      setState(() => _strokes.removeLast());
-    }
-  }
+    setState(() => _isProcessing = true);
 
-  Future<void> _confirm() async {
-    setState(() => _saving = true);
     try {
-      final boundary =
-          _boundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final bytes = byteData!.buffer.asUint8List();
-      final path = await MediaStorage.persistBytes(bytes, widget.stage.stageId);
-      if (!mounted) return;
-      widget.controller.submitStage({'filePath': path});
+      final ui.Image? image = await _signatureController.toImage();
+      if (image == null) throw Exception("Failed to generate signature image");
+
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (data == null) throw Exception("Failed to format image data");
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(data.buffer.asUint8List());
+
+      widget.controller.submitStage({
+        '${widget.stage.stageId}.filePath': file.path,
+        '${widget.stage.stageId}.timestamp': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving signature: $e', style: const TextStyle(color: Colors.white))),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: StripeIdentityStepper(
-        currentStep: widget.controller.stepNumber,
-        totalSteps: widget.controller.totalSteps > 0 ? widget.controller.totalSteps : 4,
-        stageTitle: widget.stage.title,
-        flowTitle: widget.controller.manifest.title,
-        onBack: () {
-          widget.controller.back();
-          if (Navigator.of(context).canPop() && widget.controller.progressLabel == 'Step 01') {
-            Navigator.of(context).pop();
-          }
-        },
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Regulatory Consent Notice
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFA7F3D0)),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 22),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'By providing your signature, you certify the accuracy of all registered information and consent to National ID verification.',
-                      style: TextStyle(fontSize: 11.5, color: Color(0xFF047857), fontWeight: FontWeight.w600, height: 1.35),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Toolbar
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Legal Signatory Surface',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF0F172A)),
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    TextButton.icon(
-                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                      onPressed: _isEmpty ? null : _undo,
-                      icon: const Icon(Icons.undo_rounded, size: 16),
-                      label: const Text('Undo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 4),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: const Color(0xFFEF4444),
-                      ),
-                      onPressed: _isEmpty ? null : _clear,
-                      icon: const Icon(Icons.clear_rounded, size: 16),
-                      label: const Text('Clear', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Interactive Pad
-            Expanded(child: _buildCanvas()),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-          ),
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 3,
-              shadowColor: const Color(0x33059669),
-            ),
-            onPressed: _isEmpty || _saving ? null : _confirm,
-            icon: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.check_circle_rounded, size: 20),
-            label: Text(
-              _saving ? 'Securing Signature...' : 'Confirm Legal Signature',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCanvas() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x060F172A),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Background Watermark Shield
-          const Positioned(
-            right: 20,
-            bottom: 20,
-            child: Opacity(
-              opacity: 0.04,
-              child: Icon(
-                Icons.draw_rounded,
-                size: 160,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-          ),
-
-          // Signatory Baseline Guideline
-          Positioned(
-            bottom: 45,
-            left: 24,
-            right: 24,
-            child: Container(
-              height: 1.5,
-              color: const Color(0xFFCBD5E1),
-            ),
-          ),
-          const Positioned(
-            bottom: 16,
-            left: 24,
-            right: 24,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(Icons.edit_outlined, size: 14, color: Color(0xFF94A3B8)),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Sign with finger above guideline (ዲጂታል ፊርማ)',
-                    style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          RepaintBoundary(
-            key: _boundaryKey,
-            child: GestureDetector(
-              onPanStart: _onPanStart,
-              onPanUpdate: _onPanUpdate,
-              child: CustomPaint(
-                painter: _SignaturePainter(_strokes),
-                size: Size.infinite,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SignaturePainter extends CustomPainter {
-  final List<List<Offset>> strokes;
-
-  _SignaturePainter(this.strokes);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
-
-    final paint = Paint()
-      ..color = const Color(0xFF0F172A)
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    for (final stroke in strokes) {
-      for (var i = 0; i < stroke.length - 1; i++) {
-        canvas.drawLine(stroke[i], stroke[i + 1], paint);
+      if (mounted) {
+        setState(() => _isProcessing = false);
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _SignaturePainter oldDelegate) => true;
+  Widget build(BuildContext context) {
+    final hasSignature = _signatureController.isNotEmpty;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: StripeIdentityStepper(
+        currentStep: widget.controller.stepNumber,
+        totalSteps: widget.controller.totalSteps > 0 ? widget.controller.totalSteps : 4,
+        stageTitle: widget.stage.title,
+        flowTitle: widget.controller.manifest.title,
+        onBack: widget.controller.back,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primary.withAlpha(40)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Please provide your legal signature within the bounds below. This will be cryptographically sealed.',
+                      style: TextStyle(color: AppColors.primaryDark, fontSize: 13, height: 1.4, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border, width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: Offset(0, 4)),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    // Guide lines
+                    Positioned.fill(
+                      child: CustomPaint(painter: _SignatureGuidePainter()),
+                    ),
+                    // Canvas
+                    Positioned.fill(
+                      child: Signature(
+                        controller: _signatureController,
+                        backgroundColor: Colors.transparent,
+                      ),
+                    ),
+                    if (!hasSignature)
+                      const Center(
+                        child: Text(
+                          'Sign Here',
+                          style: TextStyle(
+                            color: AppColors.border,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+            boxShadow: [
+              BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: Offset(0, -4)),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.clear_rounded, size: 18),
+                  label: const Text('Clear'),
+                  onPressed: hasSignature
+                      ? () {
+                          _signatureController.clear();
+                          setState(() {});
+                        }
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: _isProcessing
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.check_rounded, size: 20),
+                  label: Text(
+                    _isProcessing ? 'Processing...' : 'Accept Signature',
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
+                  ),
+                  onPressed: hasSignature && !_isProcessing ? _saveSignature : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SignatureGuidePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.border
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final double startY = size.height * 0.75;
+    
+    // Draw the baseline
+    canvas.drawLine(
+      Offset(size.width * 0.1, startY),
+      Offset(size.width * 0.9, startY),
+      paint,
+    );
+
+    // Draw the X marker
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: 'X',
+        style: TextStyle(color: AppColors.textMuted, fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(size.width * 0.1, startY - 24));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

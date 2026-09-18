@@ -38,7 +38,7 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
     }).toList();
 
     return RefreshIndicator(
-      color: const Color(0xFF059669),
+      color: const Color(0xFF34D399),
       onRefresh: () async => widget.onRefresh(),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
@@ -56,14 +56,14 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: Color(0xFFE2E8F0),
                       letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${filteredFlows.length} server-driven schema${filteredFlows.length == 1 ? '' : 's'} available',
-                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -73,9 +73,9 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF059669)),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF34D399)),
                       )
-                    : const Icon(Icons.sync_rounded, color: Color(0xFF475569)),
+                    : const Icon(Icons.sync_rounded, color: Color(0xFF94A3B8)),
                 onPressed: widget.onRefresh,
               ),
             ],
@@ -85,12 +85,12 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
           // Search Bar
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: const Color(0xFF334155)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x040F172A),
+                  color: Color(0x33000000),
                   blurRadius: 10,
                   offset: Offset(0, 3),
                 ),
@@ -100,8 +100,8 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
                 hintText: 'Search workflows (KYC, KYB, Fayda, Loan)...',
-                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B)),
+                hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 18),
@@ -109,6 +109,8 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                       )
                     : null,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
@@ -128,17 +130,17 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                     label: Text(cat),
                     selected: isSelected,
                     onSelected: (_) => setState(() => _selectedCategory = cat),
-                    selectedColor: const Color(0xFF0F172A),
+                    selectedColor: const Color(0xFF34D399),
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFF475569),
+                      color: isSelected ? const Color(0xFF06281B) : const Color(0xFFCBD5E1),
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
                     ),
-                    backgroundColor: Colors.white,
+                    backgroundColor: const Color(0xFF1E293B),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+                        color: isSelected ? const Color(0xFF34D399) : const Color(0xFF334155),
                       ),
                     ),
                   ),
@@ -153,17 +155,17 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: const Color(0xFF334155)),
               ),
               child: const Column(
                 children: [
                   Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF94A3B8)),
                   SizedBox(height: 12),
-                  Text('No workflows found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+                  Text('No workflows found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFFE2E8F0))),
                   SizedBox(height: 4),
-                  Text('Try choosing another category or clearing your search.', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                  Text('Try choosing another category or clearing your search.', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
                 ],
               ),
             ),
@@ -179,12 +181,12 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFF334155)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x040F172A),
+            color: Color(0x33000000),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),
@@ -224,14 +226,14 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 15.5,
-                            color: Color(0xFF0F172A),
+                            color: Color(0xFFE2E8F0),
                             letterSpacing: -0.2,
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           flow.description,
-                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 12, height: 1.35),
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.35),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -242,10 +244,10 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: const Color(0xFF111827),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF0F172A)),
+                    child: const Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFFE2E8F0)),
                   ),
                 ],
               ),
@@ -258,14 +260,14 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
+                      color: const Color(0xFF064E3B),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                      border: Border.all(color: const Color(0xFF065F46)),
                     ),
                     child: Text(
                       flow.category.toUpperCase(),
                       style: const TextStyle(
-                        color: Color(0xFF047857),
+                        color: Color(0xFF6EE7B7),
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
@@ -275,19 +277,19 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: const Color(0xFF111827),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Icon(Icons.timer_outlined, size: 12, color: Color(0xFF64748B)),
+                        const Icon(Icons.timer_outlined, size: 12, color: Color(0xFF94A3B8)),
                         const SizedBox(width: 4),
                         Text(
                           flow.estimatedDuration,
                           style: const TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFFCBD5E1),
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                           ),
@@ -298,19 +300,19 @@ class _WorkflowCatalogTabState extends State<WorkflowCatalogTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: const Color(0xFF111827),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Icon(Icons.layers_outlined, size: 12, color: Color(0xFF64748B)),
+                        const Icon(Icons.layers_outlined, size: 12, color: Color(0xFF94A3B8)),
                         const SizedBox(width: 4),
                         Text(
                           '${flow.stageCount} Stages',
                           style: const TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFFCBD5E1),
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                           ),

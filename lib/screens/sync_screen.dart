@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../controllers/flow_controller.dart';
 import '../services/sync_engine.dart';
 import '../services/sync_status.dart';
+import '../theme/app_colors.dart';
 
 class SyncScreen extends StatefulWidget {
   final FlowController controller;
@@ -64,19 +65,14 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Gateway Cloud Sync',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: Color(0xFF0F172A)),
-        ),
+        title: const Text('Cloud Sync', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
         centerTitle: true,
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+          child: Divider(height: 1, color: AppColors.border),
         ),
       ),
       body: Center(
@@ -101,72 +97,50 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
     return switch (status) {
       SyncIdle() => Container(
           padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x060F172A),
-                blurRadius: 16,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: AppColors.cardDecorationElevated,
           child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 3),
+              CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
               SizedBox(height: 20),
               Text(
-                'Initializing Encrypted Payload...',
-                style: TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
+                'Preparing Encrypted Payload...',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 6),
               Text(
                 'Compressing declarations and verifying cryptographic hashes.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
               ),
             ],
           ),
         ),
       SyncUploading(:final step, :final totalSteps, :final label) => Container(
           padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0C0F172A),
-                blurRadius: 20,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
+          decoration: AppColors.cardDecorationElevated,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
+                  color: AppColors.primaryLight,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                  border: Border.all(color: AppColors.primary.withAlpha(50)),
                 ),
-                child: const Icon(Icons.cloud_upload_rounded, color: Color(0xFF059669), size: 40),
+                child: const Icon(Icons.cloud_upload_rounded, color: AppColors.primary, size: 40),
               ),
               const SizedBox(height: 20),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 17.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.2),
+                style: const TextStyle(fontSize: 17.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.2),
               ),
               const SizedBox(height: 6),
               Text(
-                'Phase $step of $totalSteps • Multipart Secure Stream',
-                style: const TextStyle(color: Color(0xFF059669), fontSize: 12.5, fontWeight: FontWeight.w700),
+                'Phase $step of $totalSteps • Secure Stream',
+                style: const TextStyle(color: AppColors.primary, fontSize: 12.5, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 24),
               ClipRRect(
@@ -174,8 +148,8 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
                 child: LinearProgressIndicator(
                   value: totalSteps > 0 ? step / totalSteps : 0.5,
                   minHeight: 8,
-                  backgroundColor: const Color(0xFFE2E8F0),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                  backgroundColor: AppColors.surfaceDim,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
             ],
@@ -183,34 +157,18 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
         ),
       SyncSucceeded() => Container(
           constraints: const BoxConstraints(maxWidth: 480),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFA7F3D0), width: 1.5),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1410B981),
-                blurRadius: 28,
-                offset: Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Color(0x060F172A),
-                blurRadius: 10,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
+          decoration: AppColors.cardDecorationElevated,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top Banner with Badge
+              // Top Banner
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0F172A),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(26),
-                    topRight: Radius.circular(26),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    topRight: Radius.circular(18),
                   ),
                 ),
                 child: Row(
@@ -219,18 +177,17 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withAlpha(40),
+                        color: Colors.white.withAlpha(25),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF10B981).withAlpha(100)),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 13),
+                          Icon(Icons.check_circle_rounded, color: Colors.white, size: 13),
                           SizedBox(width: 5),
                           Text(
-                            'TRANSACTION COMMITTED',
+                            'COMMITTED',
                             style: TextStyle(
-                              color: Color(0xFF34D399),
+                              color: Colors.white,
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
@@ -241,11 +198,7 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
                     ),
                     Text(
                       _formattedTimestamp(),
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -256,69 +209,52 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Spring Animated Icon
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
+                          color: AppColors.successLight,
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFA7F3D0), width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x2010B981),
-                              blurRadius: 18,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
+                          border: Border.all(color: AppColors.success.withAlpha(60), width: 2.5),
                         ),
-                        child: const Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 52),
+                        child: const Icon(Icons.verified_rounded, color: AppColors.success, size: 52),
                       ),
                     ),
                     const SizedBox(height: 18),
                     const Text(
                       'Registration Committed!',
-                      style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.4,
-                      ),
+                      style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.4),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       widget.controller.manifest.title,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF059669),
-                      ),
+                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.primary),
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'All customer declarations, Fayda ID tokens, biometric photos, and digital signatures are cryptographically sealed in the core banking ledger.',
+                      'All declarations, ID tokens, biometrics, and signatures are sealed in the core banking ledger.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12.5, height: 1.45),
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.45),
                     ),
                     const SizedBox(height: 20),
 
-                    // Audit Checklist Card
+                    // Audit Card
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        color: AppColors.surfaceDim,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Column(
                         children: [
                           _buildAuditRow(Icons.fingerprint_rounded, 'Fayda ID Verified & Tokenized'),
-                          const Divider(height: 14, color: Color(0xFFE2E8F0)),
+                          Divider(height: 14, color: AppColors.border.withAlpha(100)),
                           _buildAuditRow(Icons.badge_outlined, 'National ID Media Stored'),
-                          const Divider(height: 14, color: Color(0xFFE2E8F0)),
+                          Divider(height: 14, color: AppColors.border.withAlpha(100)),
                           _buildAuditRow(Icons.draw_rounded, 'Legal Signatory Hash Sealed'),
-                          const Divider(height: 14, color: Color(0xFFE2E8F0)),
+                          Divider(height: 14, color: AppColors.border.withAlpha(100)),
                           _buildAuditRow(Icons.cloud_done_rounded, 'Core Banking Ledger Synced'),
                         ],
                       ),
@@ -326,21 +262,12 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
 
                     const SizedBox(height: 24),
 
-                    // Back to Terminal Dashboard Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 3,
-                          shadowColor: const Color(0x40059669),
-                        ),
                         icon: const Icon(Icons.home_filled, size: 20),
                         label: const Text(
-                          'Back to Terminal Dashboard',
+                          'Back to Dashboard',
                           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                         ),
                         onPressed: () => Navigator.of(context).pop(),
@@ -355,15 +282,11 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
       SyncFailed(:final message) => Container(
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFFECACA)),
+            border: Border.all(color: AppColors.error.withAlpha(40)),
             boxShadow: const [
-              BoxShadow(
-                color: Color(0x10DC2626),
-                blurRadius: 20,
-                offset: Offset(0, 6),
-              ),
+              BoxShadow(color: AppColors.shadowMedium, blurRadius: 20, offset: Offset(0, 6)),
             ],
           ),
           child: Column(
@@ -371,33 +294,28 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEE2E2),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
                   shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.error.withAlpha(40)),
                 ),
-                child: const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 48),
+                child: const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Sync Encountered An Error',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Retry Synchronization', style: TextStyle(fontWeight: FontWeight.bold)),
                   onPressed: _retry,
@@ -412,19 +330,15 @@ class _SyncScreenState extends State<SyncScreen> with SingleTickerProviderStateM
   Widget _buildAuditRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF059669)),
+        Icon(icon, size: 16, color: AppColors.success),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
           ),
         ),
-        const Icon(Icons.check_rounded, size: 16, color: Color(0xFF059669)),
+        const Icon(Icons.check_rounded, size: 16, color: AppColors.success),
       ],
     );
   }

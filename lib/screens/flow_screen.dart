@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/flow_controller.dart';
 import '../models/stage_config.dart';
+import '../theme/app_colors.dart';
 import '../widgets/revolut_receipt_sheet.dart';
 import 'native/photo_capture_screen.dart';
 import 'native/signature_capture_screen.dart';
@@ -65,19 +66,27 @@ class FlowScreen extends StatelessWidget {
             );
           },
           transitionBuilder: (child, animation) {
-            final inOffset = isForward ? const Offset(0.25, 0.0) : const Offset(-0.25, 0.0);
-            return SlideTransition(
-              position: Tween<Offset>(begin: inOffset, end: Offset.zero).animate(
-                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            final isIncoming = child.key == ValueKey(stageKey);
+            
+            double scaleBegin;
+            if (isForward) {
+              scaleBegin = isIncoming ? 0.92 : 1.08;
+            } else {
+              scaleBegin = isIncoming ? 1.08 : 0.92;
+            }
+
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: isIncoming 
+                  ? const Interval(0.2, 1.0, curve: Curves.easeOut) 
+                  : const Interval(0.0, 0.8, curve: Curves.easeOut),
               ),
-              child: FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.97, end: 1.0).animate(
-                    CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-                  ),
-                  child: child,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: scaleBegin, end: 1.0).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
                 ),
+                child: child,
               ),
             );
           },
@@ -92,16 +101,16 @@ class FlowScreen extends StatelessWidget {
 
   Widget _buildLoadingScreen() {
     return const Scaffold(
-      backgroundColor: Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 3),
+            CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
             SizedBox(height: 18),
             Text(
-              'Initializing Server-Driven Flow...',
-              style: TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.w600, fontSize: 14),
+              'Initializing Workflow...',
+              style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ],
         ),
@@ -111,19 +120,19 @@ class FlowScreen extends StatelessWidget {
 
   Widget _buildStageLoadingScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(controller.manifest.title, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold)),
       ),
-      body: Center(
+      body: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 3),
-            const SizedBox(height: 18),
+            CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+            SizedBox(height: 18),
             Text(
               'Loading next stage schema...',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -133,7 +142,7 @@ class FlowScreen extends StatelessWidget {
 
   Widget _buildErrorScreen(Object error) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Workflow Interrupted')),
       body: Center(
         child: Padding(
@@ -143,31 +152,26 @@ class FlowScreen extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(18),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEE2E2),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
                   shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.error.withAlpha(40)),
                 ),
-                child: const Icon(Icons.cloud_off_rounded, size: 48, color: Color(0xFFDC2626)),
+                child: const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.error),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Could Not Load Step',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
                 '$error',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 onPressed: controller.retry,
                 label: const Text('Retry Step'),
@@ -181,7 +185,7 @@ class FlowScreen extends StatelessWidget {
 
   Widget _buildCompleteScreen(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Verification Summary', style: TextStyle(fontWeight: FontWeight.w800)),
         centerTitle: true,
@@ -217,17 +221,17 @@ class FlowScreen extends StatelessWidget {
 
   Widget _buildNativeCapturePlaceholder(StageConfig stage) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: Text(controller.progressLabel)),
-      body: Center(
+      body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.document_scanner_outlined, size: 64, color: Color(0xFF059669)),
-            const SizedBox(height: 16),
+            Icon(Icons.document_scanner_outlined, size: 64, color: AppColors.primary),
+            SizedBox(height: 16),
             Text(
-              '${stage.title} — Native Capture',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              'Stage — Native Capture',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
             ),
           ],
         ),
@@ -246,10 +250,10 @@ class FlowScreen extends StatelessWidget {
 
   Widget _buildUnsupportedStage() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: Text(controller.progressLabel)),
       body: Center(
-        child: Text('Unsupported stage: ${controller.currentStage.title}'),
+        child: Text('Unsupported stage: ${controller.currentStage.title}', style: const TextStyle(color: AppColors.textMuted)),
       ),
     );
   }

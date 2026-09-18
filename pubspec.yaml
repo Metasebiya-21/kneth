@@ -16,6 +16,8 @@ dependencies:
   flutter_riverpod: ^3.0.3
   kifiya_rendering_engine:
     path: ../kifiya_rendering_engine-main
+  camera: ^0.12.1
+  signature: ^6.4.0
 
 dev_dependencies:
   flutter_test:

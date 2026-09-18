@@ -5,6 +5,7 @@ import 'package:kifiya_rendering_engine/kifiya_rendering_engine.dart' as engine;
 import '../controllers/flow_controller.dart';
 import '../models/stage_config.dart';
 import '../services/rendering_engine_adapter.dart';
+import '../theme/app_colors.dart';
 import '../widgets/digital_id_card_preview.dart';
 import '../widgets/stripe_identity_stepper.dart';
 
@@ -56,7 +57,7 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: StripeIdentityStepper(
         currentStep: widget.controller.stepNumber,
         totalSteps: widget.controller.totalSteps > 0 ? widget.controller.totalSteps : 4,
@@ -74,7 +75,7 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 3),
+              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
             );
           }
 
@@ -87,24 +88,21 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFEE2E2),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorLight,
                         shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.error.withAlpha(40)),
                       ),
-                      child: const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 36),
+                      child: const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 36),
                     ),
                     const SizedBox(height: 18),
                     Text(
                       'Could not load stage schema:\n${snapshot.error}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFF475569), fontSize: 13),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
-                        foregroundColor: Colors.white,
-                      ),
                       onPressed: () => setState(_loadSchema),
                       child: const Text('Retry Stage'),
                     ),
@@ -131,11 +129,11 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
                 final formCtrl = ref.watch(engine.formControllerProvider);
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // If Fayda stage, show the interactive live hologram card preview!
+                      // Fayda Card
                       if (hasFaydaField) ...[
                         ListenableBuilder(
                           listenable: formCtrl,
@@ -162,30 +160,23 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
                         const SizedBox(height: 16),
                       ],
 
-                      // Regulatory Guarantee Security Banner
+                      // Security Banner
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x040F172A),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.primary.withAlpha(30)),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFECFDF5),
+                                color: AppColors.primary.withAlpha(20),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.shield_outlined, color: Color(0xFF059669), size: 18),
+                              child: const Icon(Icons.shield_outlined, color: AppColors.primary, size: 18),
                             ),
                             const SizedBox(width: 12),
                             const Expanded(
@@ -194,15 +185,11 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
                                 children: [
                                   Text(
                                     'Encrypted Field Collection',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
-                                      color: Color(0xFF0F172A),
-                                    ),
+                                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: AppColors.textPrimary),
                                   ),
                                   Text(
-                                    'Inputs strictly verified against Ethiopian banking and NID specifications.',
-                                    style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                                    'Inputs verified against Ethiopian banking & NID specs.',
+                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -216,18 +203,7 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
                       // Form Container
                       Container(
                         padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x040F172A),
-                              blurRadius: 10,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
+                        decoration: AppColors.cardDecorationElevated,
                         child: engine.DynamicForm(
                           schema: schema,
                           controller: _formController,
@@ -246,26 +222,21 @@ class _RenderingEngineStageScreenState extends State<RenderingEngineStageScreen>
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(240),
-            border: const Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1.2)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A0F172A),
-                blurRadius: 16,
-                offset: Offset(0, -4),
-              ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+            boxShadow: [
+              BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: Offset(0, -4)),
             ],
           ),
           child: ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
-              shadowColor: const Color(0x44059669),
+              elevation: 0,
             ),
             icon: const Icon(Icons.arrow_forward_rounded, size: 20),
             label: const Text(

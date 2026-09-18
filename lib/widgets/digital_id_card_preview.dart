@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// A Revolut/Stripe-styled live digital Fayda / National ID card preview.
-/// Renders an Ethiopian National ID hologram card with live updating
-/// 4-segment partitioned number, chip icon, and security badge.
+import '../theme/app_colors.dart';
+
+/// A holographic Fayda / National ID card preview.
+/// Keeps the dark card design for contrast against the light-mode UI.
 class DigitalIdCardPreview extends StatefulWidget {
   final String faydaNumber;
   final String fullName;
@@ -74,20 +75,20 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
         borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF0F172A), // Deep Slate Obsidian
-            Color(0xFF134E4A), // Deep Emerald Green
-            Color(0xFF0F172A),
+            Color(0xFF1E1B4B), // Deep Indigo
+            Color(0xFF312E81), // Indigo 800
+            Color(0xFF1E1B4B),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         border: Border.all(
-          color: isComplete ? const Color(0xFF10B981).withAlpha(200) : Colors.white.withAlpha(40),
+          color: isComplete ? AppColors.primary.withAlpha(200) : Colors.white.withAlpha(30),
           width: isComplete ? 2.0 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: isComplete ? const Color(0x4410B981) : const Color(0x330F172A),
+            color: isComplete ? AppColors.primary.withAlpha(40) : AppColors.shadowHeavy,
             blurRadius: isComplete ? 24 : 18,
             offset: const Offset(0, 8),
           ),
@@ -101,16 +102,12 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
             right: -20,
             bottom: -20,
             child: Opacity(
-              opacity: 0.07,
-              child: Icon(
-                Icons.shield_rounded,
-                size: 220,
-                color: Colors.white,
-              ),
+              opacity: 0.05,
+              child: Icon(Icons.shield_rounded, size: 220, color: Colors.white),
             ),
           ),
 
-          // Dynamic Holographic Sheen Sweep
+          // Dynamic Holographic Sheen
           AnimatedBuilder(
             animation: _sheenAnimation,
             builder: (context, child) {
@@ -123,9 +120,9 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                       gradient: LinearGradient(
                         colors: [
                           Colors.transparent,
-                          Colors.white.withAlpha(20),
-                          const Color(0xFF34D399).withAlpha(35),
-                          Colors.white.withAlpha(20),
+                          Colors.white.withAlpha(15),
+                          AppColors.primary.withAlpha(25),
+                          Colors.white.withAlpha(15),
                           Colors.transparent,
                         ],
                         begin: Alignment.topLeft,
@@ -144,7 +141,7 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Row: Header & Republic Badge
+                // Top Row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -156,15 +153,11 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withAlpha(40),
+                              color: AppColors.primary.withAlpha(40),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF10B981).withAlpha(100)),
+                              border: Border.all(color: AppColors.primary.withAlpha(80)),
                             ),
-                            child: const Icon(
-                              Icons.fingerprint_rounded,
-                              color: Color(0xFF34D399),
-                              size: 18,
-                            ),
+                            child: const Icon(Icons.fingerprint_rounded, color: AppColors.primaryMuted, size: 18),
                           ),
                           const SizedBox(width: 10),
                           Flexible(
@@ -186,7 +179,7 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                                 Text(
                                   'FDRE NATIONAL ID PROGRAM',
                                   style: TextStyle(
-                                    color: Colors.white.withAlpha(160),
+                                    color: Colors.white.withAlpha(140),
                                     fontWeight: FontWeight.w600,
                                     fontSize: 9.5,
                                     letterSpacing: 0.5,
@@ -201,17 +194,13 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Live Status Pill
+                    // Status Pill
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isComplete
-                            ? const Color(0xFF10B981).withAlpha(40)
-                            : Colors.white.withAlpha(20),
+                        color: isComplete ? AppColors.primary.withAlpha(30) : Colors.white.withAlpha(15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isComplete ? const Color(0xFF34D399) : Colors.white24,
-                        ),
+                        border: Border.all(color: isComplete ? AppColors.primaryMuted : Colors.white24),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -222,14 +211,14 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                             height: 6,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isComplete ? const Color(0xFF34D399) : Colors.amberAccent,
+                              color: isComplete ? AppColors.primary : AppColors.warning,
                             ),
                           ),
                           const SizedBox(width: 5),
                           Text(
                             isComplete ? '16 DIGITS' : '${cleanDigits.length}/16',
                             style: TextStyle(
-                              color: isComplete ? const Color(0xFF34D399) : Colors.white70,
+                              color: isComplete ? AppColors.primaryMuted : Colors.white70,
                               fontWeight: FontWeight.w700,
                               fontSize: 10,
                             ),
@@ -242,11 +231,10 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
 
                 const SizedBox(height: 16),
 
-                // Middle: Microchip & Contactless Wave
+                // Chip & contactless
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Smart Chip Graphic
                     Container(
                       width: 38,
                       height: 28,
@@ -261,35 +249,19 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                       ),
                       child: Stack(
                         children: [
-                          Center(
-                            child: Container(
-                              width: 24,
-                              height: 1,
-                              color: const Color(0xFF78350F).withAlpha(150),
-                            ),
-                          ),
-                          Center(
-                            child: Container(
-                              width: 1,
-                              height: 16,
-                              color: const Color(0xFF78350F).withAlpha(150),
-                            ),
-                          ),
+                          Center(child: Container(width: 24, height: 1, color: const Color(0xFF78350F).withAlpha(150))),
+                          Center(child: Container(width: 1, height: 16, color: const Color(0xFF78350F).withAlpha(150))),
                         ],
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Icon(
-                      Icons.contactless_rounded,
-                      color: Colors.white54,
-                      size: 20,
-                    ),
+                    const Icon(Icons.contactless_rounded, color: Colors.white54, size: 20),
                   ],
                 ),
 
                 const SizedBox(height: 16),
 
-                // Bottom: Live Partitioned Number & Full Name
+                // Number & Name
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -305,12 +277,7 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                           fontWeight: FontWeight.w800,
                           letterSpacing: 2.2,
                           shadows: isComplete
-                              ? [
-                                  const Shadow(
-                                    color: Color(0xFF10B981),
-                                    blurRadius: 10,
-                                  ),
-                                ]
+                              ? [Shadow(color: AppColors.primary.withAlpha(200), blurRadius: 10)]
                               : null,
                         ),
                       ),
@@ -337,11 +304,7 @@ class _DigitalIdCardPreviewState extends State<DigitalIdCardPreview> with Single
                           const SizedBox(width: 8),
                           Text(
                             [if (widget.gender != null) widget.gender, if (widget.dateOfBirth != null) widget.dateOfBirth].join(' • '),
-                            style: TextStyle(
-                              color: Colors.white.withAlpha(150),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 10.5,
-                            ),
+                            style: TextStyle(color: Colors.white.withAlpha(150), fontWeight: FontWeight.w500, fontSize: 10.5),
                           ),
                         ],
                       ],

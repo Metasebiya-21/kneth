@@ -83,14 +83,14 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
           children: [
             const Row(
               children: [
-                Icon(Icons.bolt_rounded, size: 20, color: Color(0xFF059669)),
+                Icon(Icons.bolt_rounded, size: 20, color: Color(0xFF34D399)),
                 SizedBox(width: 6),
                 Text(
                   'Field Launchpad',
                   style: TextStyle(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: Color(0xFFE2E8F0),
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -105,10 +105,10 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                   children: [
                     Text(
                       'All Workflows',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF059669)),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF34D399)),
                     ),
                     SizedBox(width: 3),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Color(0xFF059669)),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Color(0xFF34D399)),
                   ],
                 ),
               ),
@@ -307,12 +307,12 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+        border: Border.all(color: const Color(0xFFB45309).withAlpha(140), width: 1.2),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0E0F172A),
+            color: Color(0x33000000),
             blurRadius: 16,
             offset: Offset(0, 4),
           ),
@@ -324,10 +324,10 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
+              color: const Color(0xFFFEF3C7).withAlpha(25),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.edit_note_rounded, color: Color(0xFFD97706), size: 26),
+            child: const Icon(Icons.edit_note_rounded, color: Color(0xFFFBBF24), size: 26),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -340,22 +340,22 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
+                        color: const Color(0xFFFEF3C7).withAlpha(25),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text('DRAFT IN PROGRESS', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309))),
+                      child: const Text('DRAFT IN PROGRESS', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFFBBF24))),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   draft.manifest.title,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A)),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFFE2E8F0)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text('Paused at ${draft.progressLabel}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                Text('Paused at ${draft.progressLabel}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
               ],
             ),
           ),
@@ -367,8 +367,8 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
-              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFF34D399),
+              foregroundColor: const Color(0xFF06281B),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 2,
@@ -398,11 +398,11 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                 title: 'Individual KYC',
                 subtitle: 'National ID & Biometrics',
                 tag: '⚡ 4 STAGES',
-                tagBg: const Color(0xFFECFDF5),
-                tagColor: const Color(0xFF047857),
+                tagBg: const Color(0xFF064E3B),
+                tagColor: const Color(0xFF6EE7B7),
                 icon: Icons.person_add_alt_1_rounded,
-                tintGradient: [const Color(0xFFF0FDF4), Colors.white],
-                borderHighlight: const Color(0xFFA7F3D0),
+                tintGradient: [const Color(0xFF032E22), const Color(0xFF111827)],
+                borderHighlight: const Color(0xFF065F46),
                 iconGradient: const [Color(0xFF059669), Color(0xFF10B981)],
                 onTap: () => widget.onStartFlow(individualKyc),
               ),
@@ -413,11 +413,11 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                 title: 'Merchant KYB',
                 subtitle: 'Trade License & VAT',
                 tag: '🏢 4 STAGES',
-                tagBg: const Color(0xFFF0F9FF),
-                tagColor: const Color(0xFF0284C7),
+                tagBg: const Color(0xFF082F49),
+                tagColor: const Color(0xFF7DD3FC),
                 icon: Icons.storefront_rounded,
-                tintGradient: [const Color(0xFFF0F9FF), Colors.white],
-                borderHighlight: const Color(0xFFBAE6FD),
+                tintGradient: [const Color(0xFF082F49), const Color(0xFF111827)],
+                borderHighlight: const Color(0xFF075985),
                 iconGradient: const [Color(0xFF0284C7), Color(0xFF38BDF8)],
                 onTap: () => widget.onStartFlow(merchantKyb),
               ),
@@ -432,11 +432,11 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                 title: 'Agri-Credit',
                 subtitle: 'Farmer Cooperative',
                 tag: '🌱 FAST TRACK',
-                tagBg: const Color(0xFFF0FDF4),
-                tagColor: const Color(0xFF15803D),
+                tagBg: const Color(0xFF052E16),
+                tagColor: const Color(0xFF86EFAC),
                 icon: Icons.agriculture_rounded,
-                tintGradient: [const Color(0xFFF0FDF4), Colors.white],
-                borderHighlight: const Color(0xFFBBF7D0),
+                tintGradient: [const Color(0xFF052E16), const Color(0xFF111827)],
+                borderHighlight: const Color(0xFF166534),
                 iconGradient: const [Color(0xFF16A34A), Color(0xFF4ADE80)],
                 onTap: () => widget.onStartFlow(agriCredit),
               ),
@@ -447,11 +447,11 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                 title: 'Fayda Fast',
                 subtitle: 'Instant NID Lookup',
                 tag: '🔥 INSTANT',
-                tagBg: const Color(0xFFFEF3C7),
-                tagColor: const Color(0xFFB45309),
+                tagBg: const Color(0xFF451A03),
+                tagColor: const Color(0xFFFCD34D),
                 icon: Icons.flash_on_rounded,
-                tintGradient: [const Color(0xFFFFFBEB), Colors.white],
-                borderHighlight: const Color(0xFFFDE68A),
+                tintGradient: [const Color(0xFF451A03), const Color(0xFF111827)],
+                borderHighlight: const Color(0xFF92400E),
                 iconGradient: const [Color(0xFFD97706), Color(0xFFFBBF24)],
                 onTap: () => widget.onStartFlow(faydaFast),
               ),
@@ -538,12 +538,12 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A), letterSpacing: -0.2),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFFE2E8F0), letterSpacing: -0.2),
             ),
             const SizedBox(height: 3),
             Text(
               subtitle,
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w500),
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w500),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -557,12 +557,12 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFF334155)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x060F172A),
+            color: Color(0x33000000),
             blurRadius: 14,
             offset: Offset(0, 4),
           ),
@@ -581,8 +581,8 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                 CircularProgressIndicator(
                   value: 0.9,
                   strokeWidth: 6,
-                  backgroundColor: Color(0xFFF1F5F9),
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                  backgroundColor: Color(0xFF334155),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF34D399)),
                   strokeCap: StrokeCap.round,
                 ),
                 Column(
@@ -593,7 +593,7 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
+                        color: Color(0xFFE2E8F0),
                       ),
                     ),
                   ],
@@ -616,7 +616,7 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: Color(0xFF0F172A),
+                        color: Color(0xFFE2E8F0),
                       ),
                     ),
                   ],
@@ -624,18 +624,18 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
                 const SizedBox(height: 2),
                 const Text(
                   '18 of 20 Cases Completed',
-                  style: TextStyle(color: Color(0xFF059669), fontSize: 12.5, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: Color(0xFF34D399), fontSize: 12.5, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: const Color(0xFFFEF3C7).withAlpha(25),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
                     '🎯 2 more to complete daily target bonus',
-                    style: TextStyle(color: Color(0xFFB45309), fontSize: 10.5, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Color(0xFFFBBF24), fontSize: 10.5, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -656,14 +656,14 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
           children: [
             const Text(
               'Recent Synced Cases',
-              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Color(0xFFE2E8F0)),
             ),
             InkWell(
               onTap: widget.onOpenHistory,
               borderRadius: BorderRadius.circular(8),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Text('View All Records', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF64748B))),
+                child: Text('View All Records', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF94A3B8))),
               ),
             ),
           ],
@@ -671,12 +671,12 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: const Color(0xFF334155)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x040F172A),
+                color: Color(0x33000000),
                 blurRadius: 10,
                 offset: Offset(0, 3),
               ),
@@ -697,7 +697,7 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+        border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFF334155))),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -705,10 +705,10 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
+              color: const Color(0xFF064E3B),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
+            child: const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -716,19 +716,19 @@ class _TerminalHomeTabState extends State<TerminalHomeTab> with SingleTickerProv
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF0F172A))),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFFE2E8F0))),
                 const SizedBox(height: 2),
-                Text('$type • $time', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+                Text('$type • $time', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: const Color(0xFF111827),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(id, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF475569))),
+            child: Text(id, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFFCBD5E1))),
           ),
         ],
       ),

@@ -44,23 +44,25 @@ class _ResumeChoiceScreenState extends State<ResumeChoiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.history, size: 64),
+              const Icon(Icons.history, size: 64, color: Color(0xFF34D399)),
               const SizedBox(height: 16),
               Text(
                 'Resume where you left off?',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: const Color(0xFFE2E8F0)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'You have an in-progress case (stage ${widget.restoredController.progressLabel}).',
                 textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 24),
               SizedBox(

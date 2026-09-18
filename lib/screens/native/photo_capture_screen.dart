@@ -1,185 +1,172 @@
 import 'dart:io';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../controllers/flow_controller.dart';
 import '../../models/stage_config.dart';
-import '../../services/media_storage.dart';
+import '../../theme/app_colors.dart';
 import '../../widgets/stripe_identity_stepper.dart';
 
 class PhotoCaptureScreen extends StatefulWidget {
   final FlowController controller;
   final StageConfig stage;
 
-  const PhotoCaptureScreen({super.key, required this.controller, required this.stage});
+  const PhotoCaptureScreen({
+    super.key,
+    required this.controller,
+    required this.stage,
+  });
 
   @override
   State<PhotoCaptureScreen> createState() => _PhotoCaptureScreenState();
 }
 
-class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> with TickerProviderStateMixin {
-  final ImagePicker _picker = ImagePicker();
-  String? _capturedPath;
-  bool _capturing = false;
-  String _selectedDocType = 'National ID';
+class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  CameraController? _cameraController;
+  List<CameraDescription> _cameras = [];
+  bool _isCameraInitialized = false;
+  bool _isCapturing = false;
+  XFile? _capturedImage;
+  String? _errorMsg;
 
-  late AnimationController _laserController;
-  late Animation<double> _laserAnimation;
-
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+  late AnimationController _flashAnimController;
+  late Animation<double> _flashAnimation;
 
   @override
   void initState() {
     super.initState();
-    _laserController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
-    _laserAnimation = CurvedAnimation(parent: _laserController, curve: Curves.easeInOut);
+    WidgetsBinding.instance.addObserver(this);
 
-    _pulseController = AnimationController(
+    _flashAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      duration: const Duration(milliseconds: 150),
     );
+    _flashAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _flashAnimController, curve: Curves.easeOut),
+    );
+
+    _initCamera();
   }
 
   @override
   void dispose() {
-    _laserController.dispose();
-    _pulseController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _cameraController?.dispose();
+    _flashAnimController.dispose();
     super.dispose();
   }
 
-  Future<void> _capture(ImageSource source) async {
-    setState(() => _capturing = true);
-    try {
-      final photo = await _picker.pickImage(source: source, imageQuality: 85);
-      if (photo != null) {
-        final persistedPath = await MediaStorage.persistCopy(photo.path, widget.stage.stageId);
-        setState(() => _capturedPath = persistedPath);
-      }
-    } finally {
-      if (mounted) setState(() => _capturing = false);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive) {
+      cameraController.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initCamera();
     }
   }
 
-  void _retake() => setState(() => _capturedPath = null);
+  Future<void> _initCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras.isEmpty) {
+        setState(() => _errorMsg = 'No cameras found on device.');
+        return;
+      }
 
-  void _confirm() {
-    widget.controller.submitStage({'filePath': _capturedPath, 'docType': _selectedDocType});
+      final camera = _cameras.first;
+      _cameraController = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+          _errorMsg = null;
+        });
+      }
+    } catch (e) {
+      setState(() => _errorMsg = 'Failed to initialize camera: $e');
+    }
+  }
+
+  Future<void> _takePicture() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized || _isCapturing) {
+      return;
+    }
+
+    setState(() => _isCapturing = true);
+
+    try {
+      // Trigger flash animation
+      _flashAnimController.forward().then((_) => _flashAnimController.reverse());
+
+      final XFile file = await _cameraController!.takePicture();
+      if (mounted) {
+        setState(() {
+          _capturedImage = file;
+          _isCapturing = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isCapturing = false;
+        _errorMsg = 'Error capturing photo: $e';
+      });
+    }
+  }
+
+  void _retakePhoto() {
+    setState(() => _capturedImage = null);
+  }
+
+  void _confirmAndContinue() {
+    if (_capturedImage != null) {
+      widget.controller.submitStage({
+        '${widget.stage.stageId}.filePath': _capturedImage!.path,
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: StripeIdentityStepper(
         currentStep: widget.controller.stepNumber,
         totalSteps: widget.controller.totalSteps > 0 ? widget.controller.totalSteps : 4,
         stageTitle: widget.stage.title,
         flowTitle: widget.controller.manifest.title,
-        onBack: () {
-          widget.controller.back();
-          if (Navigator.of(context).canPop() && widget.controller.progressLabel == 'Step 01') {
-            Navigator.of(context).pop();
-          }
-        },
+        onBack: widget.controller.back,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Document Presets
-            if (_capturedPath == null) ...[
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: ['National ID', 'Business License', 'Passport', 'Kebele ID'].map((type) {
-                    final isSel = _selectedDocType == type;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(type),
-                        selected: isSel,
-                        onSelected: (_) => setState(() => _selectedDocType = type),
-                        selectedColor: const Color(0xFF0F172A),
-                        labelStyle: TextStyle(
-                          color: isSel ? Colors.white : const Color(0xFF475569),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(
-                            color: isSel ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Guidance Pill
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFA7F3D0)),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(Icons.document_scanner_rounded, color: Color(0xFF059669), size: 20),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Position the card inside the green guides. Ensure lighting is uniform with zero glare.',
-                      style: TextStyle(fontSize: 11.5, color: Color(0xFF047857), fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Viewfinder / Captured Image
-            Expanded(child: Center(child: _buildViewfinder())),
-          ],
-        ),
-      ),
+      body: _buildBody(),
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+            boxShadow: [
+              BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: Offset(0, -4)),
+            ],
           ),
-          child: _capturedPath == null
+          child: _capturedImage != null
               ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                        ),
-                        onPressed: _capturing ? null : () => _capture(ImageSource.gallery),
-                        icon: const Icon(Icons.photo_library_outlined, size: 18),
-                        label: const Text('From Gallery', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: OutlinedButton(
+                        onPressed: _retakePhoto,
+                        child: const Text('Retake'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -187,214 +174,168 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> with TickerProv
                       flex: 2,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          elevation: 3,
-                          shadowColor: const Color(0x33059669),
                         ),
-                        onPressed: _capturing ? null : () => _capture(ImageSource.camera),
-                        icon: const Icon(Icons.camera_alt_rounded, size: 20),
-                        label: Text(
-                          _capturing ? 'Opening Camera...' : 'Capture Document',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                        ),
+                        icon: const Icon(Icons.check_rounded, size: 20),
+                        label: const Text('Use Photo'),
+                        onPressed: _confirmAndContinue,
                       ),
                     ),
                   ],
                 )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          side: const BorderSide(color: Color(0xFFEF4444)),
-                          foregroundColor: const Color(0xFFEF4444),
-                        ),
-                        icon: const Icon(Icons.refresh_rounded, size: 18),
-                        onPressed: _retake,
-                        label: const Text('Retake', style: TextStyle(fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          elevation: 3,
-                          shadowColor: const Color(0x33059669),
-                        ),
-                        icon: const Icon(Icons.check_circle_rounded, size: 20),
-                        onPressed: _confirm,
-                        label: const Text('Confirm Photo', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                      ),
-                    ),
-                  ],
+              : ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: _isCapturing
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.camera_alt_rounded, size: 20),
+                  label: Text(
+                    _isCapturing ? 'Processing...' : 'Capture Document',
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
+                  ),
+                  onPressed: _takePicture,
                 ),
         ),
       ),
     );
   }
 
-  Widget _buildViewfinder() {
-    if (_capturedPath == null) {
-      return Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x330F172A),
-              blurRadius: 20,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Viewfinder framing card
-            Container(
-              margin: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white24, width: 1.5),
+  Widget _buildBody() {
+    if (_errorMsg != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.error.withAlpha(40)),
+                ),
+                child: const Icon(Icons.no_photography_rounded, color: AppColors.error, size: 36),
               ),
-              child: Stack(
-                children: [
-                  _cornerCorner(Alignment.topLeft),
-                  _cornerCorner(Alignment.topRight),
-                  _cornerCorner(Alignment.bottomLeft),
-                  _cornerCorner(Alignment.bottomRight),
-
-                  // Animated Laser Scanner Line
-                  AnimatedBuilder(
-                    animation: _laserAnimation,
-                    builder: (context, child) {
-                      return Align(
-                        alignment: Alignment(0, (_laserAnimation.value * 2) - 1.0),
-                        child: Container(
-                          height: 2.5,
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                Color(0xFF34D399),
-                                Color(0xFF10B981),
-                                Color(0xFF34D399),
-                                Colors.transparent,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF10B981).withAlpha(180),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+              const SizedBox(height: 16),
+              Text(
+                'Camera Unavailable',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
-            ),
-
-            // Center Callout
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ScaleTransition(
-                  scale: _pulseAnimation,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(20),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF34D399).withAlpha(120), width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withAlpha(60),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.center_focus_strong_rounded, size: 38, color: Color(0xFF34D399)),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Scan $_selectedDocType',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Align borders within frame',
-                  style: TextStyle(color: Colors.white.withAlpha(170), fontSize: 12),
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(_errorMsg!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+            ],
+          ),
         ),
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF10B981), width: 2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x180F172A),
-            blurRadius: 16,
-            offset: Offset(0, 6),
+    if (!_isCameraInitialized) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+
+    return Stack(
+      children: [
+        // Camera or Preview
+        Positioned.fill(
+          child: Container(
+            color: Colors.black, // Keep the background strictly behind the camera black for contrast
+            child: _capturedImage != null
+                ? Image.file(File(_capturedImage!.path), fit: BoxFit.cover)
+                : CameraPreview(_cameraController!),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Image.file(File(_capturedPath!), fit: BoxFit.contain),
-      ),
+        ),
+
+        // Document Guide Overlay (Only show while capturing)
+        if (_capturedImage == null)
+          Positioned.fill(
+            child: Column(
+              children: [
+                Expanded(flex: 1, child: Container(color: Colors.black.withAlpha(150))),
+                Row(
+                  children: [
+                    Expanded(flex: 1, child: Container(color: Colors.black.withAlpha(150), height: 320)),
+                    Container(
+                      width: 300,
+                      height: 320,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.primary, width: 3),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Corner brackets
+                          _buildCornerBracket(Alignment.topLeft),
+                          _buildCornerBracket(Alignment.topRight),
+                          _buildCornerBracket(Alignment.bottomLeft),
+                          _buildCornerBracket(Alignment.bottomRight),
+                        ],
+                      ),
+                    ),
+                    Expanded(flex: 1, child: Container(color: Colors.black.withAlpha(150), height: 320)),
+                  ],
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    width: double.infinity,
+                    color: Colors.black.withAlpha(150),
+                    alignment: Alignment.topCenter,
+                    padding: const EdgeInsets.only(top: 24),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Align document within the frame',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Flash animation
+        AnimatedBuilder(
+          animation: _flashAnimation,
+          builder: (context, child) {
+            return IgnorePointer(
+              child: Container(
+                color: Colors.white.withOpacity(_flashAnimation.value),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  Widget _cornerCorner(Alignment alignment) {
+  Widget _buildCornerBracket(Alignment alignment) {
     return Align(
       alignment: alignment,
       child: Container(
-        width: 26,
-        height: 26,
+        width: 30,
+        height: 30,
         decoration: BoxDecoration(
           border: Border(
-            top: alignment == Alignment.topLeft || alignment == Alignment.topRight
-                ? const BorderSide(color: Color(0xFF34D399), width: 4)
+            top: (alignment == Alignment.topLeft || alignment == Alignment.topRight)
+                ? const BorderSide(color: AppColors.primary, width: 4)
                 : BorderSide.none,
-            bottom: alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight
-                ? const BorderSide(color: Color(0xFF34D399), width: 4)
+            bottom: (alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight)
+                ? const BorderSide(color: AppColors.primary, width: 4)
                 : BorderSide.none,
-            left: alignment == Alignment.topLeft || alignment == Alignment.bottomLeft
-                ? const BorderSide(color: Color(0xFF34D399), width: 4)
+            left: (alignment == Alignment.topLeft || alignment == Alignment.bottomLeft)
+                ? const BorderSide(color: AppColors.primary, width: 4)
                 : BorderSide.none,
-            right: alignment == Alignment.topRight || alignment == Alignment.bottomRight
-                ? const BorderSide(color: Color(0xFF34D399), width: 4)
+            right: (alignment == Alignment.topRight || alignment == Alignment.bottomRight)
+                ? const BorderSide(color: AppColors.primary, width: 4)
                 : BorderSide.none,
           ),
         ),

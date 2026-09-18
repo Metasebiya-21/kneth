@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// A Stripe Identity-styled segmented step progress header.
+import '../theme/app_colors.dart';
+
+/// A clean, modern step progress header for flow screens.
 class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidget {
   final int currentStep;
   final int totalSteps;
@@ -33,9 +35,9 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
         height: 92,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           border: Border(
-            bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1.2),
+            bottom: BorderSide(color: AppColors.border, width: 1),
           ),
         ),
         child: Column(
@@ -51,7 +53,7 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                     constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                    icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A), size: 22),
+                    icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary, size: 22),
                     onPressed: onBack,
                   ),
                   const SizedBox(width: 8),
@@ -66,7 +68,7 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
                         style: const TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textMuted,
                           letterSpacing: 0.8,
                         ),
                         maxLines: 1,
@@ -78,7 +80,7 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
                         style: const TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary,
                           height: 1.15,
                           letterSpacing: -0.2,
                         ),
@@ -89,24 +91,24 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Segmented Counter Pill
+                // Step counter pill
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
+                    color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                    border: Border.all(color: AppColors.primary.withAlpha(50)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF059669)),
+                      const Icon(Icons.bolt_rounded, size: 14, color: AppColors.primary),
                       const SizedBox(width: 4),
                       Text(
                         'Step $currentStep of $effectiveTotal',
                         style: const TextStyle(
-                          color: Color(0xFF047857),
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w700,
                           fontSize: 11,
                         ),
@@ -119,7 +121,7 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
 
             const SizedBox(height: 10),
 
-            // Stripe Segmented Progress Bars
+            // Segmented Progress Bars
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: List.generate(effectiveTotal > 0 ? effectiveTotal : 1, (index) {
@@ -137,15 +139,12 @@ class StripeIdentityStepper extends StatelessWidget implements PreferredSizeWidg
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
-                      color: isCompleted
-                          ? const Color(0xFF059669) // Green filled
-                          : isCurrent
-                              ? const Color(0xFF10B981) // Active glowing green
-                              : const Color(0xFFE2E8F0), // Inactive slate
+                      gradient: (isCompleted || isCurrent) ? AppColors.primaryGradient : null,
+                      color: (isCompleted || isCurrent) ? null : AppColors.surfaceContainer,
                       boxShadow: isCurrent
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF10B981).withAlpha(160),
+                                color: AppColors.primary.withAlpha(100),
                                 blurRadius: 6,
                                 spreadRadius: 0.5,
                                 offset: const Offset(0, 1),

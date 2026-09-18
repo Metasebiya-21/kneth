@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-/// A Revolut/Apple-Pay-styled itemized application summary receipt.
+import '../theme/app_colors.dart';
+
+/// A modern, clean receipt sheet for completed flow summaries.
 class RevolutReceiptSheet extends StatefulWidget {
   final String flowTitle;
   final String category;
@@ -84,38 +86,31 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Top Revolut Badge with Spring Scale
+          // Top Badge
           ScaleTransition(
             scale: _scaleAnimation,
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
+                  color: AppColors.successLight,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x1210B981),
-                      blurRadius: 10,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
+                  border: Border.all(color: AppColors.success.withAlpha(50)),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 16),
+                    Icon(Icons.verified_user_rounded, color: AppColors.success, size: 14),
                     SizedBox(width: 6),
                     Text(
-                      'VERIFICATION COMPLETE • READY TO COMMIT',
+                      'VERIFICATION COMPLETE',
                       style: TextStyle(
-                        color: Color(0xFF047857),
+                        color: AppColors.successDark,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.4,
@@ -128,29 +123,18 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
           ),
           const SizedBox(height: 16),
 
-          // Revolut Receipt Card
+          // Receipt Card
           Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0C0F172A),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
+            decoration: AppColors.cardDecorationElevated,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Receipt Header
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0F172A),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: Column(
                     children: [
@@ -176,11 +160,7 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                           ),
                           Text(
                             DateTime.now().toString().substring(0, 16),
-                            style: TextStyle(
-                              color: Colors.white.withAlpha(150),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 11.5),
                           ),
                         ],
                       ),
@@ -195,19 +175,16 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                           letterSpacing: -0.3,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
-                        'Audit Trail & Regulatory Submission Record',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(160),
-                          fontSize: 12,
-                        ),
+                        'Audit Trail & Submission Record',
+                        style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 12),
                       ),
                     ],
                   ),
                 ),
 
-                // Itemized Form Data
+                // Itemized Data
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -216,27 +193,22 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                       const Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(Icons.fact_check_rounded, color: Color(0xFF059669), size: 18),
+                          Icon(Icons.fact_check_rounded, color: AppColors.primary, size: 18),
                           SizedBox(width: 8),
                           Text(
                             'Recorded Declarations',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13.5,
-                              color: Color(0xFF0F172A),
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppColors.textPrimary),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       ...textEntries.map((e) {
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
+                          margin: const EdgeInsets.only(bottom: 6),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFF1F5F9)),
+                            color: AppColors.surfaceDim,
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -245,7 +217,7 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                               Text(
                                 _formatKey(e.key),
                                 style: const TextStyle(
-                                  color: Color(0xFF64748B),
+                                  color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12.5,
                                 ),
@@ -257,8 +229,8 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                                   textAlign: TextAlign.end,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    color: Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -273,15 +245,11 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                         const Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(Icons.attachment_rounded, color: Color(0xFF0284C7), size: 18),
+                            Icon(Icons.attachment_rounded, color: AppColors.secondary, size: 18),
                             SizedBox(width: 8),
                             Text(
-                              'Biometric & Document Assets',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13.5,
-                                color: Color(0xFF0F172A),
-                              ),
+                              'Document Assets',
+                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppColors.textPrimary),
                             ),
                           ],
                         ),
@@ -296,9 +264,9 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                               width: 140,
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
+                                color: AppColors.surfaceDim,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -307,22 +275,18 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                                     height: 80,
                                     width: double.infinity,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE2E8F0),
+                                      color: AppColors.surfaceContainer,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     clipBehavior: Clip.antiAlias,
                                     child: exists
                                         ? Image.file(file, fit: BoxFit.cover)
-                                        : const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                                        : const Icon(Icons.broken_image_rounded, color: AppColors.textMuted),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     _formatKey(m.key),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                      color: Color(0xFF0F172A),
-                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.textPrimary),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -331,15 +295,11 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 12),
+                                      Icon(Icons.check_circle_rounded, color: AppColors.success, size: 12),
                                       SizedBox(width: 3),
                                       Text(
                                         'Verified',
-                                        style: TextStyle(
-                                          color: Color(0xFF059669),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                        style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w700),
                                       ),
                                     ],
                                   ),
@@ -353,7 +313,7 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                   ),
                 ),
 
-                // Jagged / Dotted Ticket Divider
+                // Dotted Divider
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
@@ -362,14 +322,14 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                       (i) => Expanded(
                         child: Container(
                           height: 1.5,
-                          color: i.isEven ? const Color(0xFFCBD5E1) : Colors.transparent,
+                          color: i.isEven ? AppColors.border : Colors.transparent,
                         ),
                       ),
                     ),
                   ),
                 ),
 
-                // Security & Audit Footer
+                // Audit Footer
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -378,10 +338,10 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: AppColors.surfaceDim,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.qr_code_2_rounded, size: 28, color: Color(0xFF0F172A)),
+                        child: const Icon(Icons.qr_code_2_rounded, size: 28, color: AppColors.textPrimary),
                       ),
                       const SizedBox(width: 14),
                       const Expanded(
@@ -391,11 +351,11 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
                           children: [
                             Text(
                               'Signed & Cryptographically Hashed',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF0F172A)),
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textPrimary),
                             ),
                             Text(
                               'Case ID: #KIF-2026-ETH • Immutable Ledger Ready',
-                              style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5),
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 10.5),
                             ),
                           ],
                         ),
@@ -409,19 +369,18 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
 
           const SizedBox(height: 24),
 
-          // Primary Actions
+          // Actions
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
-              shadowColor: const Color(0x44059669),
+              elevation: 0,
             ),
             icon: const Icon(Icons.cloud_upload_rounded, size: 22),
             label: const Text(
-              'Confirm & Sync to Gateway',
+              'Confirm & Sync',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.2),
             ),
             onPressed: widget.onConfirmAndSync,
@@ -431,10 +390,13 @@ class _RevolutReceiptSheetState extends State<RevolutReceiptSheet> with SingleTi
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              side: const BorderSide(color: AppColors.border, width: 1.5),
             ),
             onPressed: widget.onEditStage,
-            child: const Text('Review or Edit Prior Steps', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Review or Edit Prior Steps',
+              style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
           ),
           const SizedBox(height: 24),
         ],
