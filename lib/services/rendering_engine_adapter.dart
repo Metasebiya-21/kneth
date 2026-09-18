@@ -69,6 +69,18 @@ Future<engine.FieldSchema> _toFieldSchema(
     required = dependency.then.isRequired ?? required;
   }
 
+  var regex = field.property.regex;
+  final isPhone = field.key.toLowerCase().contains('phone') ||
+      field.key.toLowerCase().contains('mobile') ||
+      field.label.toLowerCase().contains('phone') ||
+      field.label.toLowerCase().contains('mobile') ||
+      field.label.contains('ስልክ');
+
+  if (isPhone) {
+    // Allows Ethiopian formats: 09XXXXXXXX, 07XXXXXXXX, +2519XXXXXXXX, +2517XXXXXXXX, 2519XXXXXXXX, 2517XXXXXXXX, 9XXXXXXXX, 7XXXXXXXX
+    regex = r'^(\+251|251|0)?[79]\d{8}$';
+  }
+
   return engine.FieldSchema(
     id: field.key,
     type: await _toFieldType(field),
@@ -77,7 +89,7 @@ Future<engine.FieldSchema> _toFieldSchema(
     options: await _resolveOptions(field, apiClient),
     dependsOn: dependsOn,
     visibleWhenEquals: visibleWhenEquals,
-    regex: field.property.regex,
+    regex: regex,
   );
 }
 

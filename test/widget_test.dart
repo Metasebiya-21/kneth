@@ -11,6 +11,9 @@ import 'package:sdui_demo/services/api_client.dart';
 /// [FakeApiClient.fetchNextStage] knows this stage exists.
 class FakeApiClient implements ApiClient {
   @override
+  Future<List<FlowManifest>> fetchAvailableFlows() async => const [];
+
+  @override
   Future<Map<String, dynamic>?> fetchNextStage({
     required String flowId,
     required String? afterStageId,
@@ -40,7 +43,7 @@ class FakeApiClient implements ApiClient {
 
 void main() {
   testWidgets('FlowScreen renders the current stage title', (WidgetTester tester) async {
-    final manifest = FlowManifest(flowId: 'test_flow');
+    const manifest = FlowManifest(flowId: 'test_flow');
     final controller = FlowController(manifest: manifest, apiClient: FakeApiClient());
 
     await tester.pumpWidget(MaterialApp(home: FlowScreen(controller: controller)));

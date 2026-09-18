@@ -1,5 +1,5 @@
 name: sdui_demo
-description: Minimal SDUI renderer demo for the Kifiya Agent App
+description: Server-Driven UI Client for Kifiya Agent App
 publish_to: 'none'
 version: 0.1.0
 
@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.2.1
   image_picker: ^1.1.2
   path_provider: ^2.1.4
   shared_preferences: ^2.3.2
@@ -23,3 +24,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/
+

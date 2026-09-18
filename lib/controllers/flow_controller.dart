@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,10 +15,10 @@ class _HistoryEntry {
   _HistoryEntry({required this.stageJson, required this.stepNumber});
 }
 
+enum NavigationDirection { forward, backward }
+
 /// Drives a fully server-driven flow: it holds no local stage list at all,
-/// just whatever stage [ApiClient.fetchNextStage] last returned. Each call
-/// asks the (mocked) server "what's next", optionally informed by the
-/// values just submitted, so branching is entirely the server's call.
+/// just whatever stage [ApiClient.fetchNextStage] last returned.
 class FlowController extends ChangeNotifier {
   final FlowManifest manifest;
   final ApiClient apiClient;
@@ -28,15 +29,15 @@ class FlowController extends ChangeNotifier {
   bool _isComplete;
   Object? _loadError;
   int _stepNumber;
+  NavigationDirection _direction = NavigationDirection.forward;
   final Map<String, Map<String, dynamic>> _collectedValues;
   final List<_HistoryEntry> _history = [];
 
   String? _lastAfterStageId;
   Map<String, dynamic>? _lastSubmittedValues;
 
-  /// Starts a fresh flow: kicks off fetching the first stage immediately.
   FlowController({required this.manifest, ApiClient? apiClient})
-      : apiClient = apiClient ?? MockApiClient(),
+      : apiClient = apiClient ?? HttpApiClient(),
         _isLoading = true,
         _isComplete = false,
         _stepNumber = 0,
@@ -51,7 +52,7 @@ class FlowController extends ChangeNotifier {
     required bool isComplete,
     required int stepNumber,
     required Map<String, Map<String, dynamic>> initialValues,
-  })  : apiClient = apiClient ?? MockApiClient(),
+  })  : apiClient = apiClient ?? HttpApiClient(),
         _currentStageJson = currentStageJson,
         _currentStage = currentStageJson != null ? StageConfig.fromJson(currentStageJson) : null,
         _isLoading = false,
@@ -59,22 +60,15 @@ class FlowController extends ChangeNotifier {
         _stepNumber = stepNumber,
         _collectedValues = initialValues;
 
-  /// True while a stage is being fetched (initial load, or after submit).
   bool get isLoading => _isLoading;
-
-  /// True once the server has signaled there's no next stage.
   bool get isComplete => _isComplete;
-
-  /// Set when the last fetch failed; cleared by [retry]/a successful fetch.
   Object? get loadError => _loadError;
-
-  /// Only valid when [isLoading] is false, [loadError] is null, and
-  /// [isComplete] is false.
   StageConfig get currentStage => _currentStage!;
+  NavigationDirection get direction => _direction;
 
-  /// No fixed total is knowable ahead of time in a server-driven, possibly
-  /// branching flow — this just reports how many stages have been reached.
   String get progressLabel => 'Step ${_stepNumber.toString().padLeft(2, '0')}';
+  int get stepNumber => _stepNumber;
+  int get totalSteps => math.max(manifest.stageCount, _stepNumber);
 
   Map<String, dynamic> get allValues => {
         for (final entry in _collectedValues.entries)
@@ -85,24 +79,64 @@ class FlowController extends ChangeNotifier {
   Map<String, dynamic> valuesForStage(String stageId) =>
       _collectedValues[stageId] ?? {};
 
-  Future<void> submitStage(Map<String, dynamic> values) async {
-    if (_isLoading || _isComplete || _currentStageJson == null) return;
-    final stageId = currentStage.stageId;
-    _collectedValues[stageId] = Map<String, dynamic>.from(values);
-    _history.add(_HistoryEntry(stageJson: _currentStageJson!, stepNumber: _stepNumber));
-    await _loadNext(afterStageId: stageId, submittedValues: values);
+  static String capitalizeWords(String input) {
+    if (input.trim().isEmpty) return input;
+    return input.split(' ').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + (word.length > 1 ? word.substring(1).toLowerCase() : '');
+    }).join(' ');
   }
 
-  /// Re-attempts whatever fetch last failed.
+  static String normalizeEthiopianPhone(String input) {
+    var clean = input.replaceAll(RegExp(r'[\s\-()]'), '');
+    if (clean.startsWith('+251')) {
+      return clean;
+    } else if (clean.startsWith('251')) {
+      return '+$clean';
+    } else if (clean.startsWith('09') || clean.startsWith('07')) {
+      return '+251${clean.substring(1)}';
+    } else if (clean.startsWith('9') || clean.startsWith('7')) {
+      return '+251$clean';
+    }
+    return clean;
+  }
+
+  Future<void> submitStage(Map<String, dynamic> values) async {
+    if (_isLoading || _isComplete || _currentStageJson == null) return;
+    _direction = NavigationDirection.forward;
+    final stageId = currentStage.stageId;
+
+    final sanitized = <String, dynamic>{};
+    for (final entry in values.entries) {
+      final key = entry.key;
+      final val = entry.value;
+      if (val is String) {
+        final lower = key.toLowerCase();
+        if (lower.contains('name') || lower.contains('mother') || lower.contains('father')) {
+          sanitized[key] = capitalizeWords(val);
+        } else if (lower.contains('phone') || lower.contains('mobile') || lower.contains('tel')) {
+          sanitized[key] = normalizeEthiopianPhone(val);
+        } else {
+          sanitized[key] = val;
+        }
+      } else {
+        sanitized[key] = val;
+      }
+    }
+
+    _collectedValues[stageId] = sanitized;
+    _history.add(_HistoryEntry(stageJson: _currentStageJson!, stepNumber: _stepNumber));
+    await _loadNext(afterStageId: stageId, submittedValues: sanitized);
+  }
+
   Future<void> retry() => _loadNext(
         afterStageId: _lastAfterStageId,
         submittedValues: _lastSubmittedValues,
       );
 
-  /// Returns to the previously-visited stage, if any (client-side history —
-  /// the server is only ever asked to go forward).
   void back() {
     if (_isLoading || _history.isEmpty) return;
+    _direction = NavigationDirection.backward;
     final previous = _history.removeLast();
     _currentStageJson = previous.stageJson;
     _currentStage = StageConfig.fromJson(previous.stageJson);
@@ -110,6 +144,7 @@ class FlowController extends ChangeNotifier {
     _isComplete = false;
     _loadError = null;
     notifyListeners();
+    save();
   }
 
   Future<void> _loadNext({
@@ -139,7 +174,6 @@ class FlowController extends ChangeNotifier {
       }
       _isLoading = false;
       notifyListeners();
-      // Only persist a known-good state — never a failed/ambiguous one.
       save();
     } catch (e) {
       _isLoading = false;
@@ -148,14 +182,20 @@ class FlowController extends ChangeNotifier {
     }
   }
 
+  bool get hasCollectedData => _collectedValues.values.any(
+        (map) => map.isNotEmpty && map.values.any((v) => v != null && v.toString().trim().isNotEmpty),
+      );
+
   String get _storageKey => 'sdui_flow_state_${manifest.flowId}';
 
-  /// Persists the current stage descriptor and collected values so an
-  /// in-progress case survives an app restart. Fire-and-forget is fine
-  /// here since a save that loses a race with app termination just means
-  /// the last stage isn't resumed.
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
+    // Do not save as draft if no actual data has been entered
+    if (!hasCollectedData) {
+      await prefs.remove(_storageKey);
+      return;
+    }
+
     await prefs.setString(
       _storageKey,
       jsonEncode({
@@ -167,16 +207,11 @@ class FlowController extends ChangeNotifier {
     );
   }
 
-  /// Clears any saved state for this flow, e.g. once a case has synced
-  /// successfully or the user chooses to start over.
   Future<void> clearSaved() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);
   }
 
-  /// Reads saved state for [manifest], if any, and returns a
-  /// [FlowController] restored to that point — without re-fetching
-  /// anything — or null if there's no in-progress case saved.
   static Future<FlowController?> restore({
     required FlowManifest manifest,
     ApiClient? apiClient,
@@ -191,6 +226,15 @@ class FlowController extends ChangeNotifier {
       for (final entry in rawValues.entries)
         entry.key: Map<String, dynamic>.from(entry.value as Map),
     };
+
+    final hasData = valuesByStage.values.any(
+      (map) => map.isNotEmpty && map.values.any((v) => v != null && v.toString().trim().isNotEmpty),
+    );
+
+    if (!hasData) {
+      await prefs.remove('sdui_flow_state_${manifest.flowId}');
+      return null;
+    }
 
     return FlowController._restored(
       manifest: manifest,
