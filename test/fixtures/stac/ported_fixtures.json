@@ -1,0 +1,122 @@
+{
+  "location": {
+    "stageId": "location",
+    "title": "location",
+    "screenType": "GENERIC_FORM",
+    "nativeHandler": null,
+    "widget": {
+      "type": "column",
+      "children": [
+        {
+          "type": "kneth_dropdown",
+          "id": "region",
+          "label": "region",
+          "required": true,
+          "order": 1,
+          "dependsOn": [],
+          "consentRequired": false,
+          "options": [
+            {
+              "label": "Addis Ababa",
+              "value": "addis_ababa"
+            },
+            {
+              "label": "Oromia",
+              "value": "oromia"
+            }
+          ]
+        },
+        {
+          "type": "kneth_dropdown",
+          "id": "district",
+          "label": "district",
+          "required": true,
+          "order": 2,
+          "dependsOn": [
+            "region"
+          ],
+          "consentRequired": false,
+          "dynamicConfig": {
+            "endpoint": "/options/regions/{region}/districts",
+            "method": "GET"
+          }
+        }
+      ]
+    }
+  },
+  "stage_a": {
+    "stageId": "stage_a",
+    "title": "stage_a",
+    "screenType": "GENERIC_FORM",
+    "nativeHandler": null,
+    "widget": {
+      "type": "column",
+      "children": []
+    }
+  },
+  "stage_b": {
+    "stageId": "stage_b",
+    "title": "stage_b",
+    "screenType": "NATIVE_CAPTURE",
+    "nativeHandler": "unrecognized_handler",
+    "widget": {
+      "type": "kneth_native_capture",
+      "id": "stage_b",
+      "label": "stage_b",
+      "handler": "unrecognized_handler"
+    }
+  },
+  "fake_default_stages": [
+    {
+      "stageId": "stage_a",
+      "title": "stage_a",
+      "screenType": "GENERIC_FORM",
+      "nativeHandler": null,
+      "widget": {
+        "type": "column",
+        "children": [
+          {
+            "type": "kneth_text",
+            "id": "name",
+            "label": "name",
+            "required": true,
+            "order": 1,
+            "dependsOn": [],
+            "consentRequired": false
+          }
+        ]
+      }
+    },
+    {
+      "stageId": "stage_b",
+      "title": "stage_b",
+      "screenType": "NATIVE_CAPTURE",
+      "nativeHandler": "photo_capture",
+      "widget": {
+        "type": "kneth_photo_capture",
+        "id": "stage_b",
+        "label": "stage_b"
+      }
+    },
+    {
+      "stageId": "stage_c",
+      "title": "stage_c",
+      "screenType": "GENERIC_FORM",
+      "nativeHandler": null,
+      "widget": {
+        "type": "column",
+        "children": [
+          {
+            "type": "kneth_text",
+            "id": "email",
+            "label": "email",
+            "required": false,
+            "order": 1,
+            "dependsOn": [],
+            "consentRequired": false
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -2334,3 +2334,294 @@ this file.
 mechanism that a bare `flutter test`/`make ci` run never picks up, confirmed by this
 task's own `make ci` run completing with exactly 166, not 168, tests) passes in
 full.
+
+## Stac migration, mobile side (2026-09-24), and two corrections to earlier sections
+
+The full account (what was built, reuse-vs-reimplementation per parser, the label-vs-value
+decision and its consumer check, the signature-capture investigation, parity results and
+what they do not prove) is in `backend/onboarding-platform/STAC_MIGRATION_SCOPING.md`,
+section 12. Summary of what changed in this repo:
+
+- `stac: 1.6.0` (pinned exactly), new feature `lib/features/stac_rendering/` (parsers for
+  `kneth_conditional/text/date/dropdown/photo_capture/signature_capture` and the two fallback
+  markers), `ApiClient.fetchFlowManifestStac` (via `ApiHttpClient`, not `Stac.fromNetwork`), a
+  flag-gated route through `FlowScreen` (`KNETH_STAC_RENDERER`, **off by default**).
+  `keneth_rendering_engine` and `rendering_engine_adapter.dart` are untouched and still the
+  default path.
+- Existing logic is reused, not copied: `FieldConfig.effectiveState`/`ConditionalDependency`,
+  `DynamicOptionsController`, `MediaStorageRepository`, `RetakePhotoUseCase`, `AppErrorView`. Two
+  small changes to existing code: `DynamicFieldOptionsReady` gained an additive `fieldOptions`
+  (label + value), and `SignaturePainter` was extracted from `SignatureCaptureScreen` so the two
+  screens share it.
+- The Stac dropdown stores the option **value**, not its label (the real backend's live-options
+  route requires a UUID dependency value; the old path gets a 422 against real reference data).
+- Facts worth knowing that the tests turned up: the old engine does **not** drop hidden fields'
+  values on submit (both paths keep them); it never enforced `minLen`/`maxLen`; and it puts a DYNAMIC
+  dropdown's status suffix into its required-error text.
+- New helpers: `tool/record_stac_fixtures.sh` (records real backend responses),
+  `tool/seed_stac_fixtures.sql`, `tool/gen_ported_stac_fixtures.py`, `make live`.
+- Tests: 166 -> 237, analyze clean, boundary script passing.
+
+**Correction 1: Phase 5's "flutter_tester network restriction" was not an environment restriction.**
+`TestWidgetsFlutterBinding` installs `HttpOverrides` that answer every request with an empty 400. Set
+`HttpOverrides.global = null` and real HTTP works (400/0 bytes vs 200/1018 bytes, same URL, same
+test). `test/live/live_round_trip_test.dart` now has that line, runs, and passes end to end through
+kneth's own Dart code, including the multipart upload (after applying one pending backend migration to
+the local dev DB, which it had been missing). The Phase 5 text above that says the file "could not be
+exercised" and blames `flutter_tester` is superseded by this.
+
+**Correction 2: Phase 4 item 3's photo-capture "hang" does not reproduce.** Faking
+`ImagePickerPlatform.instance` and driving capture -> confirm -> retake passes in about two seconds, 5
+of 5 runs, for the old `PhotoCaptureScreen` and inside a Stac-parsed tree. The full-chain coverage is
+restored in `photo_capture_screen_test.dart`. The cause of the original hang was never found; the most
+likely explanation (unverified) is that session's memory pressure and overlapping `flutter test`
+processes. This also removes the reason the `integration_test/photo_capture_test.dart` draft exists, though
+it is left in place (still unrun anywhere).
+
+## Stac parity follow-ups: the four open items closed (2026-09-24)
+
+Full account in `backend/onboarding-platform/STAC_MIGRATION_SCOPING.md`, section 13. Each was applied to
+both the old engine path and the Stac path, then the parity comparison was re-run.
+
+- **Hidden fields' values are dropped at submit** (key absent), using each field's *current* visibility via
+  `FieldConfig.effectiveState`: `dropHiddenFieldValues` (flow domain), called where each path hands values to
+  `FlowNotifier.submitStage`. A field hidden then shown again still submits.
+- **`minLen`/`maxLen` are enforced**, messages `"<label> must be at least/at most N characters"`. The old engine
+  needed real changes: `FieldSchema` in `keneth_rendering_engine` gained `minLen`/`maxLen` (freezed code
+  regenerated; that package is not under version control), the adapter passes them, `FormController` enforces
+  them. Bounds apply to optional fields once something is typed. The engine's rule and the Stac path's shared
+  rule are compared over 288 input combinations.
+- **Required wording** for a not-ready DYNAMIC dropdown is now identical in both paths:
+  `"district (select a dependency first) is required"` (label as displayed).
+- **The completion summary shows labels**, not stored values: options come from the manifest, from a session
+  cache the dropdown controllers now fill, or (resumed case, empty cache) one re-fetch; raw value only as a
+  last resort. The value-storage decision (real value, not label) is unchanged.
+- Also fixed, not on the list: the summary crashed on any long value (unbounded `ListTile.trailing`).
+- New seed: `tool/seed_stac_length_rules.sql`. Tests 237 -> 276, analyze clean, boundary script passing,
+  same count with the backend up or down.
+
+## Amharic support, three follow-ups, and removal of the old renderer (2026-09-24)
+
+Full account, with tags, in `backend/onboarding-platform/STAC_MIGRATION_SCOPING.md` section 14 (including the closing
+ledger of everything open since the original investigation). Summary of what changed in this repo:
+
+- **Amharic/UTF-8:** transport and storage are byte-exact (new backend integration test; mobile request/response
+  encoding tests; a live round trip through the real pull endpoint). No font or length-counting change was needed. The
+  one real fix: regexes now compile in Unicode mode first (fallback to the default mode), so `\p{L}` works and an emoji
+  counts as one character in `.`/`{n}` like in the length rule. The demo name pattern accepted only ASCII and now accepts
+  Amharic. Ge'ez *rendering* on a real device remains unverified.
+- **Optional fields:** one rule for required and optional text fields (empty optional = no error of any kind; typed =
+  regex then length, same messages).
+- **Back-navigation:** answers to fields hidden at submit are remembered (`FlowCaseState.rememberedValues`), never sent,
+  and reappear if the agent returns and re-reveals the field. `FlowNotifier.back()` has no UI trigger today.
+- **The old renderer is gone:** `keneth_rendering_engine`, `rendering_engine_adapter.dart`, `RenderingEngineStageScreen`
+  and the `KNETH_STAC_RENDERER` flag are deleted; the engine package (not under version control) is archived beside
+  where it was as `keneth_rendering_engine.removed-2026-09-24.tar.gz`. Its behavior lives on as golden files in
+  `test/fixtures/golden/`. `MockApiClient` now serves Stac-shaped stages (generated by the backend's real serializer).
+- **Not done, and blocked:** the backend's legacy `POST /cases/flow-manifest` route still has a mobile consumer (the
+  flow's own state is built from it); it cannot be removed until the mobile flow state is built from the Stac manifest.
+- Tests: 306 before removal, 296 after (identical with the backend up or down); backend 241.
+- Reminder for reading earlier sections of this file: the two corrections made on 2026-09-24 (the `HttpOverrides`
+  "network restriction", the photo-capture "hang") stand; the older text about `keneth_rendering_engine` describes the
+  package as it was.
+
+## Final task: Stac flow state, dead-code removal, regex signal, config audit (2026-09-24)
+
+Full account with [verified]/[inferred]/[unverified] tags: `backend/onboarding-platform/STAC_MIGRATION_SCOPING.md`
+section 15. Summary:
+
+- **Flow state now comes from `POST /cases/flow-manifest/stac`** via `stac_manifest_mapper.dart` (same domain shape;
+  no payload gap: `prefill` is constant null on both routes). Resume re-fetches by `case_id` when the saved case is
+  stale or predates this change. Verified offline against real recorded legacy vs Stac responses and live
+  (start -> resume -> stale refresh -> submit). The legacy `fetchFlowManifest`/`FlowManifestDto` are gone from the client;
+  no mobile call to the legacy route remains. The backend route is untouched.
+- **Deleted:** `PhotoCaptureScreen`, `SignatureCaptureScreen`, `media_storage_provider.dart`, their tests,
+  `integration_test/` and the `integration_test` dev dependency (all unreachable). Older entries in this file that
+  describe them (native_capture section, Phase 4 item 3, "Part 1 - integration_test") describe files that no longer exist.
+- **Regex compile failures are visible:** `kneth_text` reports a `FlutterError` (field key + pattern) when a regex
+  compiles in neither mode; the field keeps working. No release in-app indicator, deliberately (agents can't fix configs).
+  Backend authoring-time regex validation is the recommended follow-up (Python-valid patterns like `(?P<x>..)` don't
+  compile in Dart).
+- **Optional+regex audit:** dev DB hits are demo seeds only (`single_char`, `opt_code`, now labelled DEMO/TEST). The
+  legacy `customer-acquistion-service/stage_fields.json` catalog has ~20 optional fields whose ASCII-only/strict patterns
+  would reject realistic input; not live today, real risk the day it is imported.
+- **The engine archive is kept** (only copy of the old engine; device pass pending).
+- Tests: 296 -> 316 (offline and live-up identical count; live tests skip when the backend is down); backend 241.
+- **The real-device pass is the one thing this work could not address and remains the gating item before any release.**
+  Nothing here is device-level evidence.
+
+## Business document upload (2026-09-24)
+
+Full account with tags: `backend/onboarding-platform/STAC_MIGRATION_SCOPING.md` section 16. Summary:
+
+- **Part 0 found both unknowns already solved:** `POST /cases/{id}/submit` already returns `business_record_id` (no backend
+  change; only the mobile DTO dropped it), and `kneth_photo_capture` is reusable as is for a business document stage
+  (verified against the real serializer: a NATIVE_CAPTURE/photo_capture stage keyed `trade_license` renders as the same widget).
+  Individual vs business is a property of the `DocumentKind`, not of the stage or `nativeHandler`.
+- **Built:** `SubmitCaseResultDto.businessRecordId`; `ApiClient.uploadBusinessDocument`
+  (`POST /identity/business-records/{id}/documents/{kind}`); `documentTargetForStageId` (kind + owner);
+  `SyncRepositoryImpl` routes each file to `uploadDocument` or `uploadBusinessDocument` by kind, resolving every file's
+  target before the first upload (fail loudly on an unmapped stage or a missing record id; stop on the first failed upload).
+- **Dev seed:** `tool/seed_stac_business_docs.sql` (GLOBAL `business_info` + `trade_license` capture stage; demo only);
+  fixtures re-recorded.
+- **Tests:** 316 -> 339 (offline and live-up; live tests skip when the backend is down); backend 241 unchanged. A live test
+  (`test/live/business_document_live_test.dart`) got real 201s for an individual and a business document from one combined case.
+- **Not closed:** a retry after a failed upload re-submits the case and creates a second business record (verified live;
+  the backend has no submit idempotency); a business stage must be named after its `DocumentKind`; one photo per kind; the
+  offline mock flow has no business stage; not device-verified.
+
+## Device-attested liveness (2026-09-24)
+
+> ### The most important thing in this entry
+> **Whether the anti-spoofing works is entirely unverified, and cannot be verified without a real device, a real face,
+> real light and a real moving camera.** This is the most hardware- and sensor-dependent feature in the app, more so than
+> photo or signature capture: motion correlation (the one blocking check) is meaningless without a real accelerometer
+> and a real head turn, glare and contour detection need real light, ML Kit needs a real camera stream. Every test below
+> uses a fake at the camera-flow boundary, or a hand-written value; they prove the app's own handling of a result and the
+> wire contract, **never that detection works**. Nothing about this feature is "done" beyond that.
+>
+> **The known false-positive risk is untested by construction:** motion correlation fails when the head moves > 8 deg
+> std-dev but the accelerometer std-dev is < 0.1, so a genuine person with the phone propped on a table who turns their
+> head is likely rejected. Whether a hand-held phone at a customer's face reliably clears 0.1 is unknown. It also blocks
+> people for whom the check is a hard stop (below), so this is a real onboarding risk, not a curiosity.
+
+### What it is, and what it is not: device-ATTESTED, never "verified"
+The check runs on the agent's device (`smart_liveliness_detection`, pinned exactly at `0.3.9`, with `camera ^0.12.0+1`
+added directly for `availableCameras()`). The backend cannot re-check it, receives no image on the verification route,
+and records the claim under a new provider key, `device_liveness`, as `attested_passed`/`attested_failed`. A
+modified client could send anything; that is inherent to a device-side check and is why every name says attested.
+
+### Part 0, condensed (details in the earlier report)
+- Pin: 0.3.9 is the latest and analyzed (130/160); 0.3.6 and 0.3.7 have no analysis (0 points). Its changelog fixes an iOS
+  plugin missing from the published package.
+- API: `LivenessDetectionScreen(cameras:, config:, captureFinalImage: true, onLivenessCompleted, onFinalImageCaptured)`;
+  it owns the camera UI. `onFinalImageCaptured` fires (even on failure) before `onLivenessCompleted`, whose metadata has
+  `antiSpoofingDetection` with five bools. `isSuccessful` is false only on a motion-correlation failure (default
+  blocking) or depth spoofing with `failSessionOnSpoofing`; **screen-flash's `failSessionOnSpoofing` does not set it**.
+- No retry limit exists in the package, sessions restart silently on timeout or lost face, and camera-initialisation
+  failures (a denied permission) are swallowed: only a status text changes, no callback.
+- The existing backend `liveness` provider was a random mock that ignores its payload (Phase 18 in the backend NOTES.md).
+
+### Decisions
+- **Success criteria** (`lib/features/liveness/domain/device_liveness_assessment.dart`, one tested function,
+  `assessDeviceLiveness`): blocking = `motionCorrelationCheckFailed`, `screenFlashSpoofDetected`, `depthSpoofDetected`
+  (the last two only exist if someone enables those detectors; neither is enabled); informational, recorded and shown
+  as a tip but never blocking = `screenGlareDetected`, `lackOfFacialContoursDetected` (sticky for the whole session, one
+  frame sets them, uncalibrated thresholds that sunlight, backlight or glasses can trip). Fail closed: the package
+  reporting failure, missing metadata, or a missing/non-boolean blocking flag all block. Flip the policy here, not in UI.
+- **Failure handling: 3 attempts, then a hard stop** (`kMaxLivenessAttempts`, `LivenessAttempts`). A failed attempt
+  shows guidance (for a motion failure: hold the phone in your hand, not on a table, since that is the likeliest way a
+  real person fails) and "Tries left". After the third, `AppErrorView` shows a plain message asking for a supervisor and
+  the stage cannot be continued. Backing out of the camera screen, a camera error, or the package restarting a session
+  on its own do not count. **Reasoning:** a person being onboarded should never be trapped in an endless loop of the same
+  challenge, and an unbounded retry also invites trial-and-error against the detector. **Limits, stated plainly:** the
+  counter is in memory for one visit to the stage (an app restart resets it), so it is a UX guard, not a security
+  control; and the hard stop means a genuinely failing person cannot finish that case at all, which is a product
+  consequence someone should own (an escalation path does not exist yet).
+- **Failed claims are never sent.** Only a pass reaches sync. The backend would record `attested_failed`; not using it
+  is a choice, easy to change (an audit trail of exhausted attempts would need it).
+
+### What was built
+- **Backend** (details in its NOTES.md, Phase 18): `device_liveness` provider recording the claim as `attested_*`;
+  **side-effect decision: an attested pass does NOT mark a field verified in golden-record provenance and does NOT
+  re-queue matching**, because survivorship trusts verified values and a client's claim must not raise a field's trust,
+  and matching only needs re-running when a field's trust changed (tested with the strongest case, a
+  `national_id` check, and mutation-checked); unknown `provider_key` is a 404, for every key; `liveness_capture` ->
+  `kneth_liveness_capture` handler.
+- **Mobile:** `lib/features/liveness/` (domain: assessment, attempts, result + claim value; presentation: capture screen
+  wrapping the package, launcher seam); `kneth_liveness_capture` Stac parser (registered), `NativeHandler.livenessCapture`;
+  `ApiClient.submitAttestedLiveness` (route `device_liveness`; refuses a response that is not an `attested_*` result).
+  The package's own status texts say "verification" and are all replaced; its own success overlay (with a "try again"
+  that would bypass the attempt limit) is replaced.
+- **Sequencing, confirmed not assumed:** the claim needs a `record_id`, which exists only after `submitCase` creates the
+  identity record from the GLOBAL fields, so it is sent at sync time, like documents; it cannot be sent at capture. The
+  selfie image goes up through the EXISTING individual document path as `profile_picture` (stage `selfie_liveness` maps
+  to it in `document_kind_mapping.dart`). `SyncRepositoryImpl` now plans every step (documents and claims) before the
+  first call, fails loudly on anything unmapped, malformed or without its record id, and stops on the first failure:
+  the same policy as document upload, extended, not replaced. The stage keeps its values at `<stageId>.filePath` and
+  `<stageId>.attestedLiveness`.
+- **Naming:** "attested" is used for every new payload key, stored key, result value, provider name, DTO, method
+  parameter and UI wording ("Recorded as reported by this device"; no label says verified, and a test asserts the
+  package's own status texts don't). Not renamed because they already exist: request `field_checked`, response
+  `result`, `VerificationOutcome.passed`, the domain function's plain `verdict`.
+- Platform config: iOS deployment target raised from 15.0 to 15.5 (ML Kit's pods require it). **Not built or run**:
+  there is no Xcode here and the Android emulator has proved unusable on this host, so neither native build, the pods,
+  the camera permission flow, nor the plugin's Android/iOS registration was ever exercised. Android's default minSdk (24)
+  meets the plugins' requirements by reading, nothing more.
+
+### Tests: before / after
+Mobile 340 -> 393 (offline and live-up identical; with the backend down the 4 live files skip and pass vacuously, so
+that run proves only the offline tests). Backend 241 -> 267. `flutter analyze`, the boundary script, ruff and mypy are
+clean.
+- Offline: the assessment function (every flag alone and combined, fail-closed cases, guidance), the attempt counter
+  (stops exactly at 3), the widget's handling of results through a fake launcher (pass, motion failure, three failures and
+  hard stop, backing out, pass with no image, glare-only pass with a tip, camera error, resumed case), the wire contract
+  of `submitAttestedLiveness` (body keys all `attested_*`, refuses a non-attested response, 404/422/no-token), and sync
+  routing (image as `profile_picture`, claim recorded, plan resolved before any call, stop on first failure). Mutation
+  checks: making glare blocking failed 6 tests; the backend side-effect guard and the unknown-key fix were each removed
+  and caught.
+- **Live** (`test/live/device_liveness_live_test.dart`, real Keycloak, backend and database): the manifest carries the
+  stage as `kneth_liveness_capture`; the claim is recorded as `attested_passed` under provider `device-attested-liveness`
+  with the flags stored; the database shows no field marked verified and no `verification_updated` entry queued; the
+  `profile_picture` upload succeeds against the same record; the whole sync sequence succeeds; an unknown key is a 404 and
+  the mock `liveness` key is untouched; the un-attested spelling is a 422. The "device verdict" in those tests is a
+  hand-written value.
+
+### Unverified (all of it, in one place)
+Motion-correlation correctness and its false-positive rate; glare and contour detection; ML Kit face detection and the
+challenges; the camera stream, permission prompts and the package's swallowed initialisation errors on a real device;
+sensors on iOS (`sensors_plus`) and Android; the iOS 15.5 change and both native builds; the package's app-lifecycle
+handling (it rebuilds its controller on resume without some callbacks); whether a 3-attempt hard stop is acceptable to
+the business; whether an agent can get stuck in the package's silent restart loop (only the back button leaves it).
+The real-device pass, on hold for this phase of work, is where all of this must be checked before release.
+
+## Backend-counted liveness attempts and the manual-review path (2026-09-24)
+
+Backend detail with tags: `backend/onboarding-platform/NOTES.md`, Phases 19 and 20. This hardens the
+development-stage liveness feature toward pilot-readiness. **It is not the real-device pass: the detection itself
+(motion correlation, the propped-phone false positive, glare, contours, the camera and sensors) is exactly as
+unverified as before, and every test here fakes the camera flow and scripts the backend.**
+
+- **The profile-picture item needed no work.** The captured selfie already goes to the server through the existing
+  individual document path as `profile_picture` (stage `selfie_liveness`), at sync, after `submitCase`.
+- **Phase 1 — the attempt count moved to the backend.** Confirmed by rereading first: the 3-attempt loop was a counter in
+  app memory and the backend was only called once, at sync. Now the capture stage asks the backend before opening the
+  camera (`beginLivenessAttempt(caseId)`, keyed by `case_id`, the only id that exists mid-flow), reports each outcome
+  (`recordLivenessAttemptOutcome`, an attested claim), and reads the backend's count on mount (`fetchLivenessStatus`), so a
+  restart cannot buy tries: a relaunch after three counted attempts shows the hard stop immediately, and a fourth begin is
+  a 409 with the camera never opening. The local counter (`LivenessAttempts`, `kMaxLivenessAttempts`) is gone; the limit
+  and the remaining tries come from the server (`LivenessProgress`). Backing out of the camera does not report an outcome
+  (the backend keeps the attempt open and reuses it).
+  - Kept result on a dropped connection: if the outcome cannot be reported, the result is held and "Send result again"
+    retries the report without repeating the camera session. **Limits [inferred]:** if the app is killed while holding an
+    unreported failure, that failure never counts and the still-open attempt is reused (one free retry); the check now
+    needs connectivity to start (fail closed, no local fallback); a modified client can still lie or stay silent.
+  - **Verified:** widget tests (fake launcher, scripted backend) including the force-quit relaunch; contract tests for the
+    three calls; live, against the real backend, a brand-new Keycloak login and client per "launch" still gets the fourth
+    attempt refused with 409 and the case in `needs_manual_review`.
+- **Phase 2 — manual review.** `AssignmentRole.supervisor` had never been enforced by anything; it now gates
+  `POST /cases/{id}/liveness-override` (backend only). An exhausted case is `needs_manual_review`; the app shows a plain
+  message ("sent to a supervisor for manual review") and a "Check review status" button. A supervisor's `accepted` decision
+  (method `physical_document_review`, the only one built; `video_call`, `sms_2fa`, `registry_check` are named and
+  deferred) completes the stage with `livenessManualOverride` (a human decision, deliberately not "attested") and nothing
+  to upload; `rejected` leaves the case declined and the stage blocked. A case in review cannot be submitted.
+  **Not built, and named as the follow-up: any supervisor-facing UI, and a way for a supervisor to list cases awaiting
+  review.** No supervisor surface exists anywhere in this project. The agent-side "check status" is the only mobile UI.
+- **Phase 3 (backend tests):** integration tests now run on one isolated, rolled-back connection per test (autouse
+  `isolated_database`), superseding every per-file cleanup fixture and batch-size workaround. This is the strategy going
+  forward (backend NOTES.md, Phase 20).
+- **Tests:** mobile 393 -> 404 (offline and live-up identical; with the backend down the 5 live files skip and pass
+  vacuously, so that run proves only the offline tests); backend 267 -> 309. `flutter analyze`, the boundary script, ruff
+  and mypy are clean.
+- **Unverified, all of it:** real-device behaviour (camera, sensors, permissions, ML Kit, both native builds), and whether a
+  three-attempt hard stop plus a supervisor queue that does not have an interface yet is acceptable for a pilot. The
+  real-device pass, on hold, remains the gating item before any release.
+
+- **Follow-up (backend only, 2026-09-24):** the override route now accepts a `supervisor` OR `admin` assignment for the case's
+  client and refuses anyone who worked the case (recorded server-side on the liveness attempts), whatever roles they hold.
+  No mobile change. Details, and the finding that assignments can hold several roles per client:
+  `backend/onboarding-platform/NOTES.md`, Phase 21.
+- **Follow-up (backend, 2026-09-24, Phase 22):** cases now record who created and who submitted them (used by the override
+  guard), an agent has one role per client, and platform admins can change and revoke assignments with an audit log. The
+  live override tests now use a second real identity (`tool/seed_dev_platform_admin.sh`) instead of simulating one with SQL.
+  No mobile code change. See `backend/onboarding-platform/NOTES.md`, Phase 22.

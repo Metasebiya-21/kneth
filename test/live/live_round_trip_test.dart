@@ -1,25 +1,17 @@
-// Intended as a genuinely LIVE test — real HTTP, real Postgres, real
-// Keycloak, real Redis, nothing mocked at the transport level — driving
-// the actual round trip through this app's own Dart code
-// (KeycloakAuthRepositoryImpl, ApiClientImpl), not just curl against the
-// backend directly.
+// A genuinely LIVE test — real HTTP, real Postgres, real Keycloak, real Redis,
+// nothing mocked at the transport level — driving the actual round trip
+// through this app's own Dart code (KeycloakAuthRepositoryImpl,
+// ApiClientImpl), not just curl against the backend directly.
 //
-// Honest status, per NOTES.md's Phase 5: this file is correct and ready,
-// but could NOT actually be exercised in this environment —
-// `flutter_tester` (the engine `flutter test` runs against) returns a
-// synthetic 400 with an empty body/empty headers for every real outbound
-// HTTP call attempted from within it, for every host/port tried
-// (localhost and 127.0.0.1, backend and Keycloak both), including with
-// the sandbox explicitly disabled for the invoking shell — a genuine
-// environment-level restriction on `flutter_tester`'s own network access,
-// not a bug in this file or in the app code it exercises. The full round
-// trip described here (login through real Keycloak, fetch clients/
-// workflows, fetch a real flow manifest, submit a real case, upload a
-// real document) WAS verified for real, via direct HTTP against the exact
-// same routes/bodies/headers ApiClientImpl's own source builds — just via
-// curl, not by actually running this file. See NOTES.md for that
-// transcript and the one real bug it caught along the way (a seed-data
-// shape mistake, not an app or backend bug).
+// Correction (2026-09-24). NOTES.md's Phase 5 recorded that this file "could
+// NOT actually be exercised": flutter_tester returned a synthetic 400 with an
+// empty body for every real HTTP call, attributed to an environment-level
+// restriction. That was wrong. `TestWidgetsFlutterBinding.ensureInitialized()`
+// (needed here for flutter_secure_storage's channel) installs flutter_test's
+// own `HttpOverrides`, which answers EVERY request with an empty 400 — set
+// `HttpOverrides.global = null` and real HTTP works. Verified by a scratch
+// test hitting /docs both ways (400/0 bytes vs 200/1018 bytes), and by this
+// file then running for real against the seeded backend.
 //
 // Skips itself cleanly if the backend isn't reachable — this file is not,
 // and must never become, a normal `flutter test`/CI dependency (see
@@ -101,8 +93,9 @@ void main() {
   // whose platform channel needs a live Flutter binding even in a plain
   // (non-testWidgets) test.
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() => HttpOverrides.global = null);
 
-  test('login -> fetchClients -> fetchWorkflows -> fetchFlowManifest -> submitCase -> uploadDocument, all real',
+  test('login -> fetchClients -> fetchWorkflows -> fetchFlowManifestStac -> submitCase -> uploadDocument, all real',
       () async {
     if (!await _backendReachable()) {
       // ignore: avoid_print
@@ -131,10 +124,10 @@ void main() {
     expect(workflows, isNotEmpty);
     final workflow = workflows.firstWhere((w) => w.name == 'KYC/KYB collection');
 
-    // 4. Real POST /cases/flow-manifest — a brand-new case.
-    final manifest = await apiClient.fetchFlowManifest(flowId: workflow.id, clientId: client.id);
+    // 4. Real POST /cases/flow-manifest/stac — a brand-new case.
+    final manifest = await apiClient.fetchFlowManifestStac(flowId: workflow.id, clientId: client.id);
     expect(manifest.caseId, isNotEmpty);
-    final stageIds = manifest.stagesJson.map((s) => s['stageId']).toList();
+    final stageIds = manifest.stages.map((s) => s['stageId']).toList();
     expect(stageIds, containsAll(['personal_info', 'identification_card', 'association_details']));
 
     // 5. Real POST /cases/{case_id}/submit — GLOBAL (personal_info) and

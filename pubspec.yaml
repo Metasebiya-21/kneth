@@ -15,13 +15,21 @@ dependencies:
   flutter_riverpod: ^3.0.3
   http: ^1.5.0
   flutter_secure_storage: ^9.2.2
-  kifiya_rendering_engine:
-    path: ../kifiya_rendering_engine-main
+  # Pinned EXACTLY (no caret): STAC_MIGRATION_SCOPING.md's 2.4/2.5 defects
+  # (quoted-condition evaluator, dropdownMenu zero entries) were empirical
+  # findings against stac 1.6.0 specifically. Do not float without re-running
+  # those checks. Never use Stac(routeName:) or StacApp cloud themes (2.2).
+  stac: 1.6.0
+  # Pinned EXACTLY (no caret). 0.3.6 and 0.3.7 were published without a pub.dev analysis
+  # (0 granted points, no platform tags); 0.3.8 and 0.3.9 are analyzed (130/160). 0.3.9 was the latest
+  # fully-analyzed release when this was added. Bump deliberately, after re-reading its source.
+  smart_liveliness_detection: 0.3.9
+  # Needed directly for availableCameras() (LivenessDetectionScreen takes the camera list).
+  # Range matches the one smart_liveliness_detection 0.3.9 itself requires.
+  camera: ^0.12.0+1
 
 dev_dependencies:
   flutter_test:
-    sdk: flutter
-  integration_test:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_secure_storage_platform_interface: ^1.1.2

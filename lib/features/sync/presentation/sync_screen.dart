@@ -25,8 +25,8 @@ import 'sync_notifier.dart';
 /// [ApiClient] instance the rest of this case is already using), or with
 /// [repository] when a test passes one in. Every widget that actually
 /// reads sync state lives *inside* that ProviderScope (see [_SyncView]) —
-/// the same nested-override pattern this codebase already uses in
-/// RenderingEngineStageScreen: a widget can't see an override it declares
+/// the same nested-override pattern this codebase uses for the
+/// native-capture screens: a widget can't see an override it declares
 /// in its own `build()`, only widgets further down the tree can, so the
 /// "read" side has to be a separate widget below the override, not the
 /// same one that declares it.
@@ -91,10 +91,21 @@ class _SyncViewState extends ConsumerState<_SyncView> {
           entry.key.substring(0, entry.key.length - suffix.length): entry.value as String,
     };
 
+    // A liveness stage keeps the device's claim at 'stageId.attestedLiveness'
+    // (a JSON map); each one is recorded against the case's individual record.
+    const attestedSuffix = '.attestedLiveness';
+    final attestedLivenessByStage = <String, Map<String, dynamic>>{
+      for (final entry in values.entries)
+        if (entry.key.endsWith(attestedSuffix) && entry.value is Map)
+          entry.key.substring(0, entry.key.length - attestedSuffix.length):
+              Map<String, dynamic>.from(entry.value as Map),
+    };
+
     ref.read(syncNotifierProvider.notifier).submit(
           caseId: widget.controller.caseId,
           values: values,
           mediaFilesByStage: mediaFilesByStage,
+          attestedLivenessByStage: attestedLivenessByStage,
         );
   }
 

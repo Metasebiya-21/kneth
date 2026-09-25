@@ -1,0 +1,154 @@
+{
+  "association_location_label_equals_value": {
+    "log": [
+      "assoc: company_name shown initially = false",
+      "assoc: company_name shown after Group = true",
+      "assoc: \"company_name is required\" shown = true",
+      "assoc: still on the stage = true",
+      "assoc: required error cleared by typing = true",
+      "assoc: company_name shown after Individual = false",
+      "assoc: company_name shown again after Group = true",
+      "assoc: typed text restored on re-show = true",
+      "assoc: advanced past the stage = true",
+      "loc: district not-ready label shown = true",
+      "loc: a \"region ... is required\" error shown = true",
+      "loc: a \"district ... is required\" error shown = true",
+      "loc: a \"postal_code ... is required\" error shown = true",
+      "loc: district failed-to-load shown = false",
+      "loc: district options after region = [Bole, Kirkos, Yeka]",
+      "loc: \"postal_code format is invalid\" shown = true",
+      "loc: flow completed = true"
+    ],
+    "notes": {
+      "requiredMessage:region": "region is required",
+      "requiredMessage:district": "district (select a dependency first) is required",
+      "requiredMessage:postal_code": "postal_code is required",
+      "requiredMessage:district:afterRegion": "district is required"
+    },
+    "allValues": {
+      "association_details.association_type": "Group",
+      "association_details.company_name": "Acme",
+      "location.region": "Addis Ababa",
+      "location.district": "Bole",
+      "location.postal_code": "1000",
+      "location.registration_date": "2026-09-24T00:00:00.000"
+    },
+    "completed": true
+  },
+  "association_location_real_uuid_values": {
+    "log": [
+      "assoc: company_name shown initially = false",
+      "assoc: company_name shown after Group = true",
+      "assoc: \"company_name is required\" shown = true",
+      "assoc: still on the stage = true",
+      "assoc: required error cleared by typing = true",
+      "assoc: company_name shown after Individual = false",
+      "assoc: company_name shown again after Group = true",
+      "assoc: typed text restored on re-show = true",
+      "assoc: advanced past the stage = true",
+      "loc: district not-ready label shown = true",
+      "loc: a \"region ... is required\" error shown = true",
+      "loc: a \"district ... is required\" error shown = true",
+      "loc: a \"postal_code ... is required\" error shown = true",
+      "loc: district failed-to-load shown = false",
+      "loc: district options after region = [Bole, Kirkos, Yeka]",
+      "loc: \"postal_code format is invalid\" shown = true",
+      "loc: flow completed = true"
+    ],
+    "notes": {
+      "requiredMessage:region": "region is required",
+      "requiredMessage:district": "district (select a dependency first) is required",
+      "requiredMessage:postal_code": "postal_code is required",
+      "requiredMessage:district:afterRegion": "district is required"
+    },
+    "allValues": {
+      "association_details.association_type": "Group",
+      "association_details.company_name": "Acme",
+      "location.region": "4b42dc7e-1335-46e8-8090-5867233bb928",
+      "location.district": "b2062e74-5c50-4e8e-9188-cd66d2997ca0",
+      "location.postal_code": "1000",
+      "location.registration_date": "2026-09-24T00:00:00.000"
+    },
+    "completed": true
+  },
+  "length_rules": {
+    "log": [
+      "len: empty reference_code -> reference_code is required",
+      "len: empty tin_number -> (none)",
+      "len: empty notes -> (none)",
+      "len: too-short reference_code -> reference_code must be at least 3 characters",
+      "len: too-short tin_number -> tin_number must be at least 5 characters",
+      "len: too-short notes -> (none)",
+      "len: too-long reference_code -> reference_code must be at most 6 characters",
+      "len: too-long tin_number -> tin_number must be at most 10 characters",
+      "len: too-long notes -> (none)",
+      "len: in range advanced = true"
+    ],
+    "notes": {
+      "empty:reference_code": "reference_code is required",
+      "empty:tin_number": "(none)",
+      "empty:notes": "(none)",
+      "too-short:reference_code": "reference_code must be at least 3 characters",
+      "too-short:tin_number": "tin_number must be at least 5 characters",
+      "too-short:notes": "(none)",
+      "too-long:reference_code": "reference_code must be at most 6 characters",
+      "too-long:tin_number": "tin_number must be at most 10 characters",
+      "too-long:notes": "(none)"
+    },
+    "allValues": {
+      "length_rules.reference_code": "abcd",
+      "length_rules.tin_number": "",
+      "length_rules.notes": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+    },
+    "completed": true
+  },
+  "unicode_rules": {
+    "log": [
+      "uni: empty am_name -> am_name is required",
+      "uni: empty single_char -> (none)",
+      "uni: empty opt_code -> (none)",
+      "uni: amharic-too-short am_name -> am_name must be at least 2 characters",
+      "uni: amharic-too-short single_char -> (none)",
+      "uni: amharic-too-short opt_code -> (none)",
+      "uni: amharic-too-long am_name -> am_name must be at most 8 characters",
+      "uni: amharic-too-long single_char -> (none)",
+      "uni: amharic-too-long opt_code -> (none)",
+      "uni: digits-in-name am_name -> am_name format is invalid",
+      "uni: digits-in-name single_char -> (none)",
+      "uni: digits-in-name opt_code -> (none)",
+      "uni: optional-typed-invalid am_name -> (none)",
+      "uni: optional-typed-invalid single_char -> single_char format is invalid",
+      "uni: optional-typed-invalid opt_code -> opt_code format is invalid",
+      "uni: emoji-ok-code-short am_name -> (none)",
+      "uni: emoji-ok-code-short single_char -> (none)",
+      "uni: emoji-ok-code-short opt_code -> opt_code must be at least 3 characters",
+      "uni: completed = true"
+    ],
+    "notes": {
+      "empty:am_name": "am_name is required",
+      "empty:single_char": "(none)",
+      "empty:opt_code": "(none)",
+      "amharic-too-short:am_name": "am_name must be at least 2 characters",
+      "amharic-too-short:single_char": "(none)",
+      "amharic-too-short:opt_code": "(none)",
+      "amharic-too-long:am_name": "am_name must be at most 8 characters",
+      "amharic-too-long:single_char": "(none)",
+      "amharic-too-long:opt_code": "(none)",
+      "digits-in-name:am_name": "am_name format is invalid",
+      "digits-in-name:single_char": "(none)",
+      "digits-in-name:opt_code": "(none)",
+      "optional-typed-invalid:am_name": "(none)",
+      "optional-typed-invalid:single_char": "single_char format is invalid",
+      "optional-typed-invalid:opt_code": "opt_code format is invalid",
+      "emoji-ok-code-short:am_name": "(none)",
+      "emoji-ok-code-short:single_char": "(none)",
+      "emoji-ok-code-short:opt_code": "opt_code must be at least 3 characters"
+    },
+    "allValues": {
+      "unicode_rules.am_name": "አበበ በቀለ",
+      "unicode_rules.single_char": "😀",
+      "unicode_rules.opt_code": "123"
+    },
+    "completed": true
+  }
+}

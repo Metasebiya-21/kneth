@@ -2,29 +2,30 @@ import 'dart:async';
 import 'dart:math';
 
 import 'api_dtos.dart';
+import 'mock_stac_flow.dart';
 import 'app_exception.dart';
 
-/// Injectable network boundary. `MockApiClient` (below) is this app's only
-/// wired-up implementation; `ApiClientImpl` (api_client_impl.dart) is a
-/// second, selectable one built against the real backend's confirmed
-/// contract — see NOTES.md's "Building ApiClientImpl" section.
+/// Injectable network boundary. `MockApiClient` (below) is this app's default
+/// implementation; `ApiClientImpl` (api_client_impl.dart) is the real one, built
+/// against the backend's confirmed contract (NOTES.md, "Building ApiClientImpl").
 ///
-/// Returns its own DTOs ([FlowManifestDto], [FieldOptionDto],
+/// Returns its own DTOs ([StacFlowManifestDto], [FieldOptionDto],
 /// [ClientSummaryDto], [WorkflowSummaryDto]), never a feature's domain
-/// types — see api_dtos.dart's doc comment for why, and NOTES.md for the
-/// leak this fixed.
+/// types: see api_dtos.dart's doc comment for why.
 abstract class ApiClient {
-  /// Fetches the fully-resolved manifest for [flowId] (kneth's own
-  /// vocabulary for what the real backend calls `workflow_id` — a real
-  /// UUID there, a slug like `'kyc_kyb_collection'` in `MockApiClient`'s
-  /// canned data; see NOTES.md for why this naming mismatch wasn't
-  /// renamed throughout the app as part of this) as configured for
-  /// [clientId]. [caseId] is null to start a brand-new case, or a
-  /// previously-returned [FlowManifestDto.caseId] to resume one — the real
-  /// backend branches its own new-vs-resume behavior off whether this is
-  /// present; this app doesn't need to replicate that logic, only send
-  /// what it has.
-  Future<FlowManifestDto> fetchFlowManifest({
+  /// [flowId] is kneth's own vocabulary for what the real backend calls `workflow_id` (a real UUID
+  /// there, a slug like `'kyc_kyb_collection'` in `MockApiClient`'s demo data); see NOTES.md for why
+  /// that naming mismatch was not renamed throughout the app. [caseId] is null to start a brand-new
+  /// case, or a previously returned `caseId` to resume one; the backend branches its own
+  /// new-vs-resume behavior on whether it is present, so the app only sends what it has.
+  ///
+  /// Fetches the case's manifest: `POST /cases/flow-manifest/stac`. With no [caseId] the backend
+  /// creates a case and returns its real `case_id`; with one it returns that case's frozen stages
+  /// (resume). Goes through `ApiHttpClient`'s retry/backoff, bearer-token header and
+  /// `onUnauthorized` wrapping rather than `Stac.fromNetwork`, which uses its own Dio and has none
+  /// of that (STAC_MIGRATION_SCOPING.md section 12). This is the only manifest route the app uses;
+  /// the legacy `POST /cases/flow-manifest` has no mobile consumer left (section 15).
+  Future<StacFlowManifestDto> fetchFlowManifestStac({
     required String flowId,
     required String clientId,
     String? caseId,
@@ -77,6 +78,54 @@ abstract class ApiClient {
   /// mapping is sync's own concern, not this interface's.
   Future<UploadedDocumentDto> uploadDocument({
     required String recordId,
+    required String kind,
+    required String filePath,
+  });
+
+  /// Records the device's own liveness verdict against [recordId] (from a prior
+  /// [submitCase] call) — confirmed against
+  /// `POST /identity/records/{record_id}/verifications/device_liveness`. The
+  /// backend does not verify anything here: it stores the claim as
+  /// `attested_passed`/`attested_failed`, so every parameter is named as a
+  /// claim. Implementations must throw [ParseException] if the response is not
+  /// an `attested_*` result (which would mean the wrong provider answered).
+  Future<AttestedLivenessResultDto> submitAttestedLiveness({
+    required String recordId,
+    required bool attestedLivenessVerdict,
+    required Map<String, dynamic> attestedAntiSpoofingFlags,
+    String? attestedSessionId,
+    String? attestedDetector,
+  });
+
+  /// The backend's liveness attempt count for [caseId] (`GET /cases/{id}/liveness-status`).
+  Future<LivenessStatusDto> fetchLivenessStatus(String caseId);
+
+  /// Starts the next liveness attempt for [caseId], counted by the backend at once
+  /// (`POST /cases/{id}/liveness-attempts`), or returns the still-open one. Throws
+  /// [ClientException] 409 once every attempt is used (the case is then awaiting
+  /// manual review), whatever the device believes locally.
+  Future<LivenessAttemptDto> beginLivenessAttempt(String caseId);
+
+  /// Records the device's own verdict for [attemptId] as an attested claim
+  /// (`POST /cases/{id}/liveness-attempts/{attempt}/outcome`) and returns the new
+  /// status; the last allowed attempt failing moves the case to review.
+  Future<LivenessStatusDto> recordLivenessAttemptOutcome({
+    required String caseId,
+    required String attemptId,
+    required bool attestedLivenessVerdict,
+    required Map<String, dynamic> attestedAntiSpoofingFlags,
+    String? attestedSessionId,
+  });
+
+  /// Business counterpart of [uploadDocument]: uploads one captured file
+  /// against [businessRecordId] (from a prior [submitCase] call's
+  /// [SubmitCaseResultDto.businessRecordId]) as business document [kind] —
+  /// confirmed against `POST /identity/business-records/{business_record_id}/documents/{kind}`
+  /// (`multipart/form-data`, no `uploaded_by`: derived from auth
+  /// server-side). The backend rejects an individual-only kind here, and a
+  /// business-only kind on [uploadDocument].
+  Future<UploadedDocumentDto> uploadBusinessDocument({
+    required String businessRecordId,
     required String kind,
     required String filePath,
   });
@@ -134,229 +183,34 @@ class MockApiClient implements ApiClient {
     throw demoFailures[_demoRandom.nextInt(demoFailures.length)];
   }
 
-  /// Stands in for a real backend's flow-definition store: for each flowId,
-  /// an ordered list of stage descriptors, already merged for whichever
-  /// client is passed to [fetchFlowManifest]. This is the ONLY place the
-  /// kyc_kyb_collection flow's stages/fields are defined — main.dart and
-  /// every screen are generic and know nothing about fayda_number,
-  /// personal_info, etc.
-  static final Map<String, List<Map<String, dynamic>>> _flows = {
-    'kyc_kyb_collection': [
-      {
-        'stageId': 'fayda_verification',
-        'title': 'Fayda verification',
-        'screenType': 'GENERIC_FORM',
-        'fields': [
-          {
-            'key': 'fayda_number',
-            'label': 'Fayda number',
-            'type': 'TEXT',
-            'inputMode': 'FREE',
-            'property': {
-              'order': 1,
-              'isRequired': true,
-              'isHidden': false,
-              'regex': r'^\d{16}$',
-            },
-          },
-          {
-            'key': 'region',
-            'label': 'Region',
-            'type': 'SELECT',
-            'inputMode': 'ENUM',
-            'property': {
-              'order': 2,
-              'isRequired': true,
-              'isHidden': false,
-              'options': [
-                {'label': 'Addis Ababa', 'value': 'addis_ababa'},
-                {'label': 'Oromia', 'value': 'oromia'},
-                {'label': 'Amhara', 'value': 'amhara'},
-                {'label': 'Tigray', 'value': 'tigray'},
-                {'label': 'Sidama', 'value': 'sidama'},
-                {'label': 'Somali', 'value': 'somali'},
-              ],
-            },
-          },
-          // A genuine cascading DYNAMIC example: district's own options
-          // depend on which region was picked above, fetched fresh every
-          // time region changes (see DynamicOptionsController) — district
-          // starts unavailable until region has a value.
-          {
-            'key': 'district',
-            'label': 'District',
-            'type': 'SELECT',
-            'inputMode': 'DYNAMIC',
-            'property': {
-              'order': 3,
-              'isRequired': true,
-              'isHidden': false,
-              'dependsOn': ['region'],
-              'dynamicConfig': {
-                'endpoint': '/options/regions/{region}/districts',
-                'method': 'GET',
-              },
-            },
-          },
-        ],
-      },
-      {
-        'stageId': 'identification_card',
-        'title': 'Identification card',
-        'screenType': 'NATIVE_CAPTURE',
-        'nativeHandler': 'photo_capture',
-        'fields': [],
-      },
-      {
-        'stageId': 'personal_info',
-        'title': 'Personal information',
-        'screenType': 'GENERIC_FORM',
-        'fields': [
-          {
-            'key': 'full_name',
-            'label': 'Full Name',
-            'type': 'TEXT',
-            'inputMode': 'FREE',
-            // Example of a backend-attached consent requirement — field-
-            // level per the confirmed contract (ManifestFieldResponse),
-            // not stage-level (see NOTES.md's Phase 5). Not acted on by
-            // any screen yet; here purely as a shape check.
-            'consentRequired': true,
-            'property': {
-              'order': 1,
-              'isRequired': true,
-              'isHidden': false,
-              'minLen': 3,
-              'maxLen': 64,
-              'regex': r'^[a-zA-Z\s/]{1,64}$',
-            },
-          },
-          {
-            'key': 'mother_name',
-            'label': 'Mother Name',
-            'type': 'TEXT',
-            'inputMode': 'FREE',
-            'property': {
-              'order': 2,
-              'isRequired': true,
-              'isHidden': false,
-              'minLen': 3,
-              'maxLen': 64,
-              'regex': r'^[a-zA-Z\s/]{1,64}$',
-            },
-          },
-          {
-            'key': 'language_preference',
-            'label': 'Language Preference',
-            'type': 'SELECT',
-            'inputMode': 'ENUM',
-            // Example of a backend-attached prefill: last-known language
-            // preference for this client, carried over so the agent
-            // doesn't have to re-ask. Field-level, a plain string — see
-            // NOTES.md's Phase 5 (this used to be a stage-level Map).
-            'prefill': 'amharic',
-            'property': {
-              'order': 3,
-              'isRequired': true,
-              'isHidden': false,
-              'options': [
-                {'label': 'Amharic', 'value': 'amharic'},
-                {'label': 'English', 'value': 'english'},
-                {'label': 'Afan Oromifa', 'value': 'afan_oromo'},
-                {'label': 'Tigrigna', 'value': 'tigrigna'},
-              ],
-            },
-          },
-        ],
-      },
-      {
-        'stageId': 'consent_signature',
-        'title': 'Consent signature',
-        'screenType': 'NATIVE_CAPTURE',
-        'nativeHandler': 'signature_capture',
-        'fields': [],
-      },
-      {
-        'stageId': 'association_details',
-        'title': 'Association details',
-        'screenType': 'GENERIC_FORM',
-        'fields': [
-          {
-            'key': 'association_type',
-            'label': 'Association type',
-            'type': 'SELECT',
-            'inputMode': 'ENUM',
-            'property': {
-              'order': 1,
-              'isRequired': true,
-              'isHidden': false,
-              'options': [
-                {'label': 'Individual', 'value': 'Individual'},
-                {'label': 'Group', 'value': 'Group'},
-              ],
-            },
-          },
-          {
-            'key': 'company_name',
-            'label': 'Company name',
-            'type': 'TEXT',
-            'inputMode': 'FREE',
-            'property': {
-              'order': 2,
-              // Base values: hidden/not required by default — only
-              // relevant once association_type == "Group".
-              'isRequired': false,
-              'isHidden': true,
-              'dependsOn': ['association_type'],
-              'conditionalDependency': {
-                'if': [
-                  {'field': 'association_type', 'op': 'eq', 'value': 'Group'},
-                ],
-                'then': {'isRequired': true, 'isHidden': false},
-                'else': {'isRequired': false, 'isHidden': true},
-              },
-            },
-          },
-        ],
-      },
-    ],
-  };
-
-  /// Keyed by [_optionsCacheKey]`(fieldKey, dependencyValues)` — no longer
-  /// a resolved URL (see [fetchOptions]'s own doc comment for why that
-  /// changed). Important, easy to get wrong: kifiya_rendering_engine's
-  /// dropdowns only ever store/submit an option's *label* — there's no
-  /// separate value round-tripped back from the plugin (see
-  /// rendering_engine_adapter.dart's doc comment; `FieldOptionDto.value`
-  /// itself is never read anywhere in this render pipeline, only
-  /// `.label`). That means `region`'s stored form value is the literal
-  /// string "Addis Ababa", not a slug like "addis_ababa" — so the keys
-  /// below have to match that exact string, not some cleaner
-  /// machine-readable id. Each region's list is deliberately different so
-  /// a test (or a person using the app) can tell "district repopulated
-  /// for the new region" apart from "district still shows the old
-  /// region's list."
+  /// Keyed by [_optionsCacheKey]`(fieldKey, dependencyValues)`. The dependency
+  /// value is the parent option's real *value* (`region` = `addis_ababa`, the
+  /// same thing the real backend requires, a UUID there): the Stac dropdown
+  /// stores an option's value, not its label. (Before the previous renderer was
+  /// removed these were keyed by label, because it could only store labels.) Each region's list is deliberately different so a test, or a
+  /// person using the app, can tell "district repopulated for the new region"
+  /// apart from "district still shows the old region's list."
   static final Map<String, List<FieldOptionDto>> _sampleOptions = {
-    _optionsCacheKey('district', {'region': 'Addis Ababa'}): [
+    _optionsCacheKey('district', {'region': 'addis_ababa'}): [
       const FieldOptionDto(label: 'Bole', value: 'bole'),
       const FieldOptionDto(label: 'Yeka', value: 'yeka'),
       const FieldOptionDto(label: 'Kirkos', value: 'kirkos'),
     ],
-    _optionsCacheKey('district', {'region': 'Oromia'}): [
+    _optionsCacheKey('district', {'region': 'oromia'}): [
       const FieldOptionDto(label: 'Adama', value: 'adama'),
       const FieldOptionDto(label: 'Jimma', value: 'jimma'),
     ],
-    _optionsCacheKey('district', {'region': 'Amhara'}): [
+    _optionsCacheKey('district', {'region': 'amhara'}): [
       const FieldOptionDto(label: 'Bahir Dar', value: 'bahir_dar'),
       const FieldOptionDto(label: 'Gondar', value: 'gondar'),
     ],
-    _optionsCacheKey('district', {'region': 'Tigray'}): [
+    _optionsCacheKey('district', {'region': 'tigray'}): [
       const FieldOptionDto(label: 'Mekelle', value: 'mekelle'),
     ],
-    _optionsCacheKey('district', {'region': 'Sidama'}): [
+    _optionsCacheKey('district', {'region': 'sidama'}): [
       const FieldOptionDto(label: 'Hawassa', value: 'hawassa'),
     ],
-    _optionsCacheKey('district', {'region': 'Somali'}): [
+    _optionsCacheKey('district', {'region': 'somali'}): [
       const FieldOptionDto(label: 'Jijiga', value: 'jijiga'),
     ],
   };
@@ -368,20 +222,21 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<FlowManifestDto> fetchFlowManifest({
+  Future<StacFlowManifestDto> fetchFlowManifestStac({
     required String flowId,
     required String clientId,
     String? caseId,
   }) async {
     _maybeFail();
     await Future.delayed(const Duration(milliseconds: 500));
-    return FlowManifestDto(
-      // A real case_id is server-assigned; caseId here just echoes a
-      // resumed one back, or invents a fresh-looking one for a new case —
-      // good enough for a mock that nothing downstream reads yet.
+    // The demo flow's definition lives in tool/mock_flow_descriptors.json; mock_stac_flow.dart is
+    // generated from it by the backend's real serializer (tool/gen_mock_stac_flow.py), so the demo
+    // shows exactly what the real backend would emit. Every other stage/field of the demo flow
+    // (fayda_number, personal_info, ...) is defined there, and nowhere in the app's own code.
+    return StacFlowManifestDto(
       caseId: caseId ?? 'mock-case-${DateTime.now().millisecondsSinceEpoch}',
       workflowVersion: const ['1'],
-      stagesJson: _flows[flowId] ?? const [],
+      stages: kMockStacStages,
     );
   }
 
@@ -415,6 +270,7 @@ class MockApiClient implements ApiClient {
       caseId: caseId ?? 'mock-case-id',
       status: 'pending',
       recordId: 'mock-record-id',
+      businessRecordId: 'mock-business-record-id',
     );
   }
 
@@ -427,6 +283,94 @@ class MockApiClient implements ApiClient {
     _maybeFail();
     await Future.delayed(const Duration(milliseconds: 600));
     return UploadedDocumentDto(id: 'mock-document-id', kind: kind, fileReference: 'mock://$recordId/$kind');
+  }
+
+  @override
+  Future<UploadedDocumentDto> uploadBusinessDocument({
+    required String businessRecordId,
+    required String kind,
+    required String filePath,
+  }) async {
+    _maybeFail();
+    await Future.delayed(const Duration(milliseconds: 600));
+    return UploadedDocumentDto(id: 'mock-document-id', kind: kind, fileReference: 'mock://$businessRecordId/$kind');
+  }
+
+  @override
+  Future<AttestedLivenessResultDto> submitAttestedLiveness({
+    required String recordId,
+    required bool attestedLivenessVerdict,
+    required Map<String, dynamic> attestedAntiSpoofingFlags,
+    String? attestedSessionId,
+    String? attestedDetector,
+  }) async {
+    _maybeFail();
+    await Future.delayed(const Duration(milliseconds: 400));
+    return AttestedLivenessResultDto(
+      id: 'mock-attestation-id',
+      result: attestedLivenessVerdict ? 'attested_passed' : 'attested_failed',
+      provider: 'mock-device-attested-liveness',
+    );
+  }
+
+  // A tiny in-memory stand-in for the backend's per-case liveness count, so the
+  // offline demo exercises the same flow (3 attempts, then review). The real
+  // counting, rejection and override are the backend's; this proves nothing about them.
+  final Map<String, List<bool?>> _mockLivenessAttempts = {};
+
+  LivenessStatusDto _mockLivenessStatus(String caseId) {
+    final attempts = _mockLivenessAttempts[caseId] ?? const <bool?>[];
+    const max = 3;
+    final passed = attempts.contains(true);
+    final exhausted = attempts.length >= max && !attempts.contains(null) && !passed;
+    return LivenessStatusDto(
+      caseStatus: exhausted ? 'needs_manual_review' : 'in_progress',
+      attemptsUsed: attempts.length,
+      attemptsCompleted: attempts.where((a) => a != null).length,
+      maxAttempts: max,
+      attemptsRemaining: (max - attempts.length).clamp(0, max),
+      attestedPassRecorded: passed,
+      openAttemptId: attempts.contains(null) ? '$caseId#${attempts.length}' : null,
+    );
+  }
+
+  @override
+  Future<LivenessStatusDto> fetchLivenessStatus(String caseId) async {
+    _maybeFail();
+    return _mockLivenessStatus(caseId);
+  }
+
+  @override
+  Future<LivenessAttemptDto> beginLivenessAttempt(String caseId) async {
+    _maybeFail();
+    final attempts = _mockLivenessAttempts.putIfAbsent(caseId, () => []);
+    if (!attempts.contains(null)) {
+      if (attempts.length >= 3 || attempts.contains(true)) {
+        throw const ClientException(409, 'The liveness check has used all 3 attempts for this case.');
+      }
+      attempts.add(null);
+    }
+    return LivenessAttemptDto(
+      attemptId: '$caseId#${attempts.length}',
+      attemptNumber: attempts.length,
+      status: _mockLivenessStatus(caseId),
+    );
+  }
+
+  @override
+  Future<LivenessStatusDto> recordLivenessAttemptOutcome({
+    required String caseId,
+    required String attemptId,
+    required bool attestedLivenessVerdict,
+    required Map<String, dynamic> attestedAntiSpoofingFlags,
+    String? attestedSessionId,
+  }) async {
+    _maybeFail();
+    final attempts = _mockLivenessAttempts[caseId];
+    final open = attempts?.indexOf(null) ?? -1;
+    if (attempts == null || open < 0) throw const ClientException(409, 'No open liveness attempt.');
+    attempts[open] = attestedLivenessVerdict;
+    return _mockLivenessStatus(caseId);
   }
 
   /// A couple of canned entries — enough to exercise callers that list

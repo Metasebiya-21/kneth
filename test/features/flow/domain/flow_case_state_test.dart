@@ -166,4 +166,53 @@ void main() {
     expect(restored.manifest.workflowId, state.manifest.workflowId);
     expect(restored.manifest.caseId, state.manifest.caseId);
   });
+
+  group('remembered values (hidden at submit; Phase 3, section 14.4)', () {
+    FlowCaseState submitted() =>
+        FlowCaseState.initial(_manifest()).advanced({'kind': 'Individual'}, remembered: {'company': 'Acme'});
+
+    test('are kept beside, never inside, what is collected and sent', () {
+      final state = submitted();
+      expect(state.collectedValues['stage_a'], {'kind': 'Individual'});
+      expect(state.allValues, {'stage_a.kind': 'Individual'});
+      expect(state.allValues.containsKey('stage_a.company'), isFalse);
+    });
+
+    test('reappear when the stage is shown again (valuesForStage), collected values winning any overlap', () {
+      final state = submitted();
+      expect(state.valuesForStage('stage_a'), {'company': 'Acme', 'kind': 'Individual'});
+      final overlap = FlowCaseState.initial(_manifest()).advanced({'x': 'new'}, remembered: {'x': 'old', 'y': 'y'});
+      expect(overlap.valuesForStage('stage_a'), {'x': 'new', 'y': 'y'});
+    });
+
+    test('a stage with nothing remembered behaves exactly as before, prefill included', () {
+      final state = FlowCaseState.initial(_manifest());
+      expect(state.rememberedValues, isEmpty);
+      expect(state.valuesForStage('stage_b'), {'note': 'carried over'});
+      expect(state.valuesForStage('stage_a'), isEmpty);
+    });
+
+    test('resubmitting the stage replaces what was remembered, and empty remembered clears it', () {
+      final again = submitted().rewound().advanced({'kind': 'Group', 'company': 'Acme'});
+      expect(again.rememberedValues, isEmpty);
+      expect(again.allValues['stage_a.company'], 'Acme');
+    });
+
+    test('survive rewound() and a manifest refresh', () {
+      final state = FlowCaseState.initial(_manifest()).advanced({'a': 1}, remembered: {'h': 2}).advanced({}).rewound();
+      expect(state.rememberedValues['stage_a'], {'h': 2});
+      expect(state.withRefreshedManifest(_manifest()).rememberedValues['stage_a'], {'h': 2});
+    });
+
+    test('persist: toJson/fromJson round-trips them, and state saved before this existed still loads', () {
+      final restored = FlowCaseState.fromJson(submitted().toJson());
+      expect(restored.rememberedValues, {'stage_a': {'company': 'Acme'}});
+      expect(restored.allValues, {'stage_a.kind': 'Individual'});
+
+      final noneRemembered = FlowCaseState.initial(_manifest()).advanced({'a': 1});
+      expect(noneRemembered.toJson().containsKey('rememberedByStage'), isFalse, reason: 'unchanged format when unused');
+      final legacyJson = Map<String, dynamic>.of(noneRemembered.toJson());
+      expect(FlowCaseState.fromJson(legacyJson).rememberedValues, isEmpty);
+    });
+  });
 }

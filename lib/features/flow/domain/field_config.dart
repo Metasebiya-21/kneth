@@ -171,9 +171,8 @@ class FieldProperty {
 
 /// A field's resolved isRequired/isHidden for a given set of in-progress
 /// form values — see [FieldConfig.effectiveState]. This is always computed
-/// on kneth's side; it is never handed to kifiya_rendering_engine as a
-/// condition for the plugin to interpret itself, only as the final
-/// show/hide + required booleans to render.
+/// on kneth's side; it is never handed to a renderer as a condition to
+/// interpret itself, only as the final show/hide + required booleans.
 class EffectiveFieldState {
   final bool isRequired;
   final bool isHidden;
@@ -219,8 +218,8 @@ class FieldConfig {
   /// The single source of truth for whether this field is currently
   /// required/hidden, given the stage's in-progress [values]. Supports any
   /// [ConditionalDependency] shape, including a multi-clause "if" array —
-  /// unlike kifiya_rendering_engine's own dependsOn/visibleWhenEquals,
-  /// which only understands a single equality check. Pure computation over
+  /// unlike the removed renderer's own dependsOn/visibleWhenEquals,
+  /// which only understood a single equality check. Pure computation over
   /// this field's own config and the values passed in — no I/O, which is
   /// exactly why it belongs in domain/ rather than the data/ adapter that
   /// used to house the (broken, single-condition-only) version of this

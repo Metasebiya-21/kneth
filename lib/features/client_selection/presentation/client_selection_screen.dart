@@ -20,15 +20,15 @@ import '../../flow/presentation/flow_notifier.dart';
 /// decision-making here to relocate into a use case — listing and picking
 /// is mechanical forwarding, the same test every other feature in this
 /// migration applied before deciding whether to add a layer. This mirrors
-/// `RenderingEngineStageScreen`, which already reads `ApiClient` directly
-/// from presentation/ for the same reason: no domain abstraction is being
-/// hidden by interposing one.
+/// `StacFlowStageScreen`, which already reads `ApiClient` directly from
+/// presentation/ for the same reason: no domain abstraction is being hidden
+/// by interposing one.
 ///
 /// Reads `apiClientProvider` directly (no nested `ProviderScope` of its
 /// own) — the same deliberate deviation flow's own screens make: this
 /// screen's dependency doesn't vary per instance, so it uses the root
 /// override from main.dart, exactly like `FlowScreen`/
-/// `RenderingEngineStageScreen` already do.
+/// `StacFlowStageScreen` already do.
 class ClientSelectionScreen extends ConsumerStatefulWidget {
   final void Function(String clientId, String workflowId) onSelected;
 

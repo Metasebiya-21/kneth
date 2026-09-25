@@ -14,8 +14,8 @@ import '../domain/sync_status.dart';
 /// override it with a fake instead) before any widget underneath it can
 /// read [syncNotifierProvider]. This "placeholder that must be overridden"
 /// pattern is the same one already used in this codebase for
-/// kifiya_rendering_engine's own providers — see
-/// RenderingEngineStageScreen — so a missing override fails loudly instead
+/// flow's own providers (`apiClientProvider`, `flowRepositoryProvider`), so
+/// a missing override fails loudly instead
 /// of silently talking to the wrong backend.
 final syncRepositoryProvider = Provider<SyncRepository>((ref) {
   throw UnimplementedError(
@@ -53,11 +53,17 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
     required String? caseId,
     required Map<String, dynamic> values,
     required Map<String, String> mediaFilesByStage,
+    Map<String, Map<String, dynamic>> attestedLivenessByStage = const {},
   }) {
     _subscription?.cancel();
     state = const SyncIdle();
     _subscription = _repository
-        .submitCase(caseId: caseId, values: values, mediaFilesByStage: mediaFilesByStage)
+        .submitCase(
+          caseId: caseId,
+          values: values,
+          mediaFilesByStage: mediaFilesByStage,
+          attestedLivenessByStage: attestedLivenessByStage,
+        )
         .listen((status) => state = status);
   }
 

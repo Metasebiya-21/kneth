@@ -29,8 +29,11 @@ class DynamicFieldOptionsLoading extends DynamicFieldOptionsStatus {
 }
 
 class DynamicFieldOptionsReady extends DynamicFieldOptionsStatus {
-  final List<String> options;
-  const DynamicFieldOptionsReady(this.options);
+  /// The options as label/value pairs: a dropdown shows the label and stores
+  /// the real [FieldOption.value].
+  final List<FieldOption> fieldOptions;
+
+  const DynamicFieldOptionsReady(this.fieldOptions);
 }
 
 class DynamicFieldOptionsFailed extends DynamicFieldOptionsStatus {
@@ -38,21 +41,10 @@ class DynamicFieldOptionsFailed extends DynamicFieldOptionsStatus {
   const DynamicFieldOptionsFailed(this.error);
 }
 
-/// Provides the [DynamicOptionsController] the fields declared. A
-/// placeholder that throws unless overridden — RenderingEngineStageScreen
-/// always overrides it per stage, the same "must be overridden" pattern
-/// used everywhere else in this app (see sync_notifier.dart).
-final dynamicOptionsControllerProvider =
-    StateNotifierProvider<DynamicOptionsController, Map<String, DynamicFieldOptionsStatus>>((ref) {
-  throw UnimplementedError(
-    'dynamicOptionsControllerProvider has no default — it must be overridden per stage, see RenderingEngineStageScreen.',
-  );
-});
-
 /// Owns the reactive fetch/re-fetch lifecycle for every DYNAMIC field in
 /// one stage: hooks into the exact same "recompute on every value change"
-/// point `FieldConfig.effectiveState` already uses (see
-/// RenderingEngineStageScreen), rather than a second, parallel
+/// point `FieldConfig.effectiveState` already uses (the Stac dropdown
+/// parser calls [sync] whenever the stage's values change), rather than a second, parallel
 /// change-detection path — [sync] is what that recomputation calls.
 ///
 /// [sync] compares each DYNAMIC field's resolved dependency values (see
@@ -67,7 +59,7 @@ final dynamicOptionsControllerProvider =
 ///
 /// [clientId]/[workflowId] identify which manifest a field's live options
 /// are resolved against — the confirmed route needs both (see
-/// NOTES.md's Phase 3); `RenderingEngineStageScreen` sources them from
+/// NOTES.md's Phase 3); the Stac dropdown scope sources them from
 /// the current `FlowCaseState.manifest`, the already-resolved,
 /// resume-accurate source, not the original `FlowManifest` input.
 class DynamicOptionsController extends StateNotifier<Map<String, DynamicFieldOptionsStatus>> {
@@ -75,6 +67,10 @@ class DynamicOptionsController extends StateNotifier<Map<String, DynamicFieldOpt
   final StageConfig stage;
   final String clientId;
   final String workflowId;
+
+  /// Told about every successful fetch, so a later screen can display a
+  /// stored value's label without re-fetching (`resolvedOptionsProvider`).
+  final void Function(String fieldKey, List<FieldOption> options)? onOptionsResolved;
 
   Map<String, dynamic> _lastValues = const {};
   bool _hasSyncedOnce = false;
@@ -84,6 +80,7 @@ class DynamicOptionsController extends StateNotifier<Map<String, DynamicFieldOpt
     required this.stage,
     required this.clientId,
     required this.workflowId,
+    this.onOptionsResolved,
   }) : super({});
 
   /// Call once when the stage first loads, and again every time the
@@ -147,7 +144,12 @@ class DynamicOptionsController extends StateNotifier<Map<String, DynamicFieldOpt
         fieldKey: fieldKey,
         dependencyValues: dependencyValues,
       );
-      state = {...state, fieldKey: DynamicFieldOptionsReady(options.map((o) => o.label).toList())};
+      final fieldOptions = options.map((o) => FieldOption(label: o.label, value: o.value)).toList();
+      onOptionsResolved?.call(fieldKey, fieldOptions);
+      state = {
+        ...state,
+        fieldKey: DynamicFieldOptionsReady(fieldOptions),
+      };
     } on AppException catch (e) {
       state = {...state, fieldKey: DynamicFieldOptionsFailed(e)};
     } catch (e) {

@@ -1,0 +1,390 @@
+{
+    "case_id": "97b55734-dfb5-41ec-b81c-ad41bd8baaa1",
+    "workflow_version": [
+        "personal_info",
+        "identification_card",
+        "association_details",
+        "location",
+        "length_rules",
+        "unicode_rules",
+        "business_info",
+        "trade_license",
+        "selfie_liveness"
+    ],
+    "stages": [
+        {
+            "stageId": "personal_info",
+            "title": "personal_info",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "widget": {
+                "type": "column",
+                "children": [
+                    {
+                        "type": "kneth_text",
+                        "id": "birth_date",
+                        "label": "birth_date",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "full_name",
+                        "label": "full_name",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "gender",
+                        "label": "gender",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "mother_name",
+                        "label": "mother_name",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "national_id",
+                        "label": "national_id",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "nationality",
+                        "label": "nationality",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "phone",
+                        "label": "phone",
+                        "required": false,
+                        "order": 0,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    }
+                ]
+            }
+        },
+        {
+            "stageId": "identification_card",
+            "title": "identification_card",
+            "screenType": "NATIVE_CAPTURE",
+            "nativeHandler": "photo_capture",
+            "widget": {
+                "type": "kneth_photo_capture",
+                "id": "identification_card",
+                "label": "identification_card"
+            }
+        },
+        {
+            "stageId": "association_details",
+            "title": "association_details",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "widget": {
+                "type": "column",
+                "children": [
+                    {
+                        "type": "kneth_dropdown",
+                        "id": "association_type",
+                        "label": "association_type",
+                        "required": false,
+                        "order": 1,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "options": [
+                            {
+                                "label": "Individual",
+                                "value": "Individual"
+                            },
+                            {
+                                "label": "Group",
+                                "value": "Group"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "kneth_conditional",
+                        "property": {
+                            "isRequired": false,
+                            "isHidden": true,
+                            "dependsOn": [
+                                "association_type"
+                            ],
+                            "conditionalDependency": {
+                                "if": [
+                                    {
+                                        "op": "eq",
+                                        "field": "association_type",
+                                        "value": "Group"
+                                    }
+                                ],
+                                "then": {
+                                    "isHidden": false,
+                                    "isRequired": true
+                                },
+                                "else": {
+                                    "isHidden": true,
+                                    "isRequired": false
+                                }
+                            }
+                        },
+                        "child": {
+                            "type": "kneth_text",
+                            "id": "company_name",
+                            "label": "company_name",
+                            "required": false,
+                            "order": 2,
+                            "dependsOn": [
+                                "association_type"
+                            ],
+                            "consentRequired": false,
+                            "maxLen": 60
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "stageId": "location",
+            "title": "location",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "widget": {
+                "type": "column",
+                "children": [
+                    {
+                        "type": "kneth_dropdown",
+                        "id": "region",
+                        "label": "region",
+                        "required": true,
+                        "order": 1,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "options": [
+                            {
+                                "label": "Addis Ababa",
+                                "value": "4b42dc7e-1335-46e8-8090-5867233bb928"
+                            },
+                            {
+                                "label": "Oromia",
+                                "value": "7f1bed2a-1263-4a73-a01b-af045aa0d88d"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "kneth_dropdown",
+                        "id": "district",
+                        "label": "district",
+                        "required": true,
+                        "order": 2,
+                        "dependsOn": [
+                            "region"
+                        ],
+                        "consentRequired": false,
+                        "dynamicConfig": {
+                            "endpoint": "/reference-data/regions/{region}/districts",
+                            "method": "GET"
+                        }
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "postal_code",
+                        "label": "postal_code",
+                        "required": true,
+                        "order": 3,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "regex": "^[0-9]{4}$"
+                    },
+                    {
+                        "type": "kneth_date",
+                        "id": "registration_date",
+                        "label": "registration_date",
+                        "required": false,
+                        "order": 4,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    }
+                ]
+            }
+        },
+        {
+            "stageId": "length_rules",
+            "title": "length_rules",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "widget": {
+                "type": "column",
+                "children": [
+                    {
+                        "type": "kneth_text",
+                        "id": "reference_code",
+                        "label": "reference_code",
+                        "required": true,
+                        "order": 1,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "minLen": 3,
+                        "maxLen": 6
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "tin_number",
+                        "label": "tin_number",
+                        "required": false,
+                        "order": 2,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "minLen": 5,
+                        "maxLen": 10
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "notes",
+                        "label": "notes",
+                        "required": false,
+                        "order": 3,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    }
+                ]
+            }
+        },
+        {
+            "stageId": "unicode_rules",
+            "title": "unicode_rules",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "widget": {
+                "type": "column",
+                "children": [
+                    {
+                        "type": "kneth_text",
+                        "id": "am_name",
+                        "label": "am_name",
+                        "required": true,
+                        "order": 1,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "regex": "^[\\p{L}\\p{M}\\s/'.-]{1,64}$",
+                        "minLen": 2,
+                        "maxLen": 8
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "single_char",
+                        "label": "single_char",
+                        "required": false,
+                        "order": 2,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "regex": "^.$"
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "opt_code",
+                        "label": "opt_code",
+                        "required": false,
+                        "order": 3,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "regex": "^[0-9]+$",
+                        "minLen": 3
+                    }
+                ]
+            }
+        },
+        {
+            "stageId": "business_info",
+            "title": "business_info",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "widget": {
+                "type": "column",
+                "children": [
+                    {
+                        "type": "kneth_dropdown",
+                        "id": "business_type",
+                        "label": "business_type",
+                        "required": true,
+                        "order": 1,
+                        "dependsOn": [],
+                        "consentRequired": false,
+                        "options": [
+                            {
+                                "label": "registered",
+                                "value": "registered"
+                            },
+                            {
+                                "label": "unregistered",
+                                "value": "unregistered"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "business_name",
+                        "label": "business_name",
+                        "required": true,
+                        "order": 2,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    },
+                    {
+                        "type": "kneth_text",
+                        "id": "tin",
+                        "label": "tin",
+                        "required": false,
+                        "order": 3,
+                        "dependsOn": [],
+                        "consentRequired": false
+                    }
+                ]
+            }
+        },
+        {
+            "stageId": "trade_license",
+            "title": "trade_license",
+            "screenType": "NATIVE_CAPTURE",
+            "nativeHandler": "photo_capture",
+            "widget": {
+                "type": "kneth_photo_capture",
+                "id": "trade_license",
+                "label": "trade_license"
+            }
+        },
+        {
+            "stageId": "selfie_liveness",
+            "title": "selfie_liveness",
+            "screenType": "NATIVE_CAPTURE",
+            "nativeHandler": "liveness_capture",
+            "widget": {
+                "type": "kneth_liveness_capture",
+                "id": "selfie_liveness",
+                "label": "selfie_liveness"
+            }
+        }
+    ]
+}

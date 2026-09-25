@@ -35,7 +35,7 @@ class FlowManifest {
 /// directly — this type is the one that shadows the wire response most
 /// closely (see NOTES.md's Phase 1 for why it, not [FlowManifest] or
 /// [FlowCaseState], is where a case_id belongs). It's the identifier a real
-/// `submitCase` call needs, and what a later `fetchFlowManifest` call sends
+/// `submitCase` call needs, and what a later `fetchFlowManifestStac` call sends
 /// back to resume this exact case rather than starting a new one.
 class ResolvedFlowManifest {
   final String workflowId;

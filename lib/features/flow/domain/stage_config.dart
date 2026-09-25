@@ -5,7 +5,7 @@ enum ScreenType { genericForm, nativeCapture, unknown }
 /// Which native screen a NATIVE_CAPTURE stage renders. Unrecognized/null
 /// values fall back to a generic placeholder in flow_screen.dart rather
 /// than crashing.
-enum NativeHandler { photoCapture, signatureCapture, unknown }
+enum NativeHandler { photoCapture, signatureCapture, livenessCapture, unknown }
 
 NativeHandler parseNativeHandler(String? raw) {
   switch (raw) {
@@ -13,6 +13,8 @@ NativeHandler parseNativeHandler(String? raw) {
       return NativeHandler.photoCapture;
     case 'signature_capture':
       return NativeHandler.signatureCapture;
+    case 'liveness_capture':
+      return NativeHandler.livenessCapture;
     default:
       return NativeHandler.unknown;
   }
@@ -45,7 +47,7 @@ class StageConfig {
   });
 
   /// Parses one stage descriptor out of the [ResolvedFlowManifest] returned
-  /// by [ApiClient.fetchFlowManifest] — the server-driven shape of one flow
+  /// by [ApiClient.fetchFlowManifestStac] (via the Stac mapper) — the server-driven shape of one flow
   /// stage, already resolved along with every other stage in the flow.
   ///
   /// No `prefill`/`consentRequired` here — the confirmed backend contract

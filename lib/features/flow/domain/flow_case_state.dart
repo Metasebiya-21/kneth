@@ -14,11 +14,18 @@ class FlowCaseState {
   final bool isComplete;
   final Map<String, Map<String, dynamic>> collectedValues;
 
+  /// Answers a stage's fields had when it was submitted but which were hidden
+  /// at that moment, so they were NOT collected (never in [allValues], never
+  /// sent). Kept only so the value can reappear on screen if the agent returns
+  /// to the stage and re-reveals the field; see [valuesForStage].
+  final Map<String, Map<String, dynamic>> rememberedValues;
+
   const FlowCaseState({
     required this.manifest,
     required this.stageIndex,
     required this.isComplete,
     required this.collectedValues,
+    this.rememberedValues = const {},
   });
 
   /// A brand-new case, positioned at the first stage (or already complete,
@@ -50,11 +57,13 @@ class FlowCaseState {
   /// map from whichever fields actually have one, rather than reading a
   /// single stage-wide map.
   Map<String, dynamic> valuesForStage(String stageId) {
+    final remembered = rememberedValues[stageId] ?? const <String, dynamic>{};
     final collected = collectedValues[stageId];
-    if (collected != null) return collected;
+    if (collected != null) return {...remembered, ...collected};
     final stage = _stageById(stageId);
-    if (stage == null) return {};
+    if (stage == null) return {...remembered};
     return {
+      ...remembered,
       for (final field in stage.fields)
         if (field.prefill != null) field.key: field.prefill!,
     };
@@ -70,7 +79,10 @@ class FlowCaseState {
   /// Records [values] for the current stage and moves to the next one (or
   /// to complete, if that was the last stage). A no-op (returns this same
   /// state) if the case is already complete or has no current stage.
-  FlowCaseState advanced(Map<String, dynamic> values) {
+  ///
+  /// [remembered] is what hidden fields held at submit time (see [rememberedValues]);
+  /// it is stored beside, never inside, the collected values.
+  FlowCaseState advanced(Map<String, dynamic> values, {Map<String, dynamic> remembered = const {}}) {
     if (isComplete || stageIndex < 0 || stageIndex >= manifest.stages.length) {
       return this;
     }
@@ -84,6 +96,11 @@ class FlowCaseState {
         ...collectedValues,
         stageId: Map<String, dynamic>.from(values),
       },
+      rememberedValues: {
+        for (final entry in rememberedValues.entries)
+          if (entry.key != stageId) entry.key: entry.value,
+        if (remembered.isNotEmpty) stageId: Map<String, dynamic>.from(remembered),
+      },
     );
   }
 
@@ -96,6 +113,7 @@ class FlowCaseState {
       stageIndex: stageIndex - 1,
       isComplete: false,
       collectedValues: collectedValues,
+      rememberedValues: rememberedValues,
     );
   }
 
@@ -109,6 +127,7 @@ class FlowCaseState {
       stageIndex: stageIndex,
       isComplete: stageIndex >= refreshed.stages.length,
       collectedValues: collectedValues,
+      rememberedValues: rememberedValues,
     );
   }
 
@@ -122,6 +141,10 @@ class FlowCaseState {
         for (final entry in rawValues.entries)
           entry.key: Map<String, dynamic>.from(entry.value as Map),
       },
+      rememberedValues: {
+        for (final entry in (json['rememberedByStage'] as Map<String, dynamic>? ?? const {}).entries)
+          entry.key: Map<String, dynamic>.from(entry.value as Map),
+      },
     );
   }
 
@@ -130,5 +153,6 @@ class FlowCaseState {
         'stageIndex': stageIndex,
         'isComplete': isComplete,
         'valuesByStage': collectedValues,
+        if (rememberedValues.isNotEmpty) 'rememberedByStage': rememberedValues,
       };
 }

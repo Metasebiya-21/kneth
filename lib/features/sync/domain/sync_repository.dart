@@ -10,7 +10,8 @@ import 'sync_status.dart';
 /// One method — callers only ever care about "submit this case and tell
 /// me how it's going," even though the implementation now makes a
 /// variable number of API calls internally (one `submitCase`, then one
-/// `uploadDocument` per captured file — see NOTES.md's Phase 2 for why
+/// `uploadDocument` (individual) or `uploadBusinessDocument` (business)
+/// per captured file, chosen by the file's `DocumentKind` — see NOTES.md's Phase 2 for why
 /// the old two-step submit+finalize shape became this instead).
 abstract class SyncRepository {
   /// Submits the entire collected case's field [values], then uploads
@@ -25,6 +26,13 @@ abstract class SyncRepository {
   /// `List<String>` of paths had already discarded by the time it reached
   /// this method.
   ///
+  /// [attestedLivenessByStage] (stage id → the stage's `attestedLiveness`
+  /// value) are the device's own liveness claims; each is recorded against the
+  /// individual record `submitCase` creates, as an *attested* result (the
+  /// backend checks nothing). Resolved up front and failed loudly like a
+  /// document, since it can only be sent once `submitCase` has returned a
+  /// `recordId`.
+  ///
   /// [caseId] comes from `FlowSession.caseId` (the case's server-assigned
   /// id, captured at manifest-fetch time — see NOTES.md's Phase 1) and is
   /// required to be explicitly passed, the same reasoning as
@@ -33,5 +41,6 @@ abstract class SyncRepository {
     required String? caseId,
     required Map<String, dynamic> values,
     required Map<String, String> mediaFilesByStage,
+    Map<String, Map<String, dynamic>> attestedLivenessByStage = const {},
   });
 }

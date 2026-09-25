@@ -69,31 +69,25 @@ class ApiClientImpl implements ApiClient {
   }
 
   @override
-  Future<FlowManifestDto> fetchFlowManifest({
+  Future<StacFlowManifestDto> fetchFlowManifestStac({
     required String flowId,
     required String clientId,
     String? caseId,
   }) async {
     final response = await _authenticated(() => httpClient.request(
           method: 'POST',
-          path: '/cases/flow-manifest',
+          path: '/cases/flow-manifest/stac',
           headers: _authHeaders(),
-          // Field names match FetchFlowManifestRequest exactly as declared
-          // — that schema has no alias config, so these snake_case keys
-          // are the only ones the server accepts. `flowId` is this app's
-          // own name for what the wire calls `workflow_id` — see
-          // NOTES.md's naming-mismatch note; not renamed throughout the
-          // app as part of this.
           body: {
             'client_id': clientId,
             'workflow_id': flowId,
             'case_id': caseId,
           },
         ));
-    return FlowManifestDto(
+    return StacFlowManifestDto(
       caseId: response['case_id'] as String,
       workflowVersion: (response['workflow_version'] as List).cast<String>(),
-      stagesJson: (response['stages'] as List).cast<Map<String, dynamic>>(),
+      stages: (response['stages'] as List).cast<Map<String, dynamic>>(),
     );
   }
 
@@ -162,6 +156,7 @@ class ApiClientImpl implements ApiClient {
       caseId: response['case_id'] as String,
       status: response['status'] as String,
       recordId: response['record_id'] as String?,
+      businessRecordId: response['business_record_id'] as String?,
     );
   }
 
@@ -193,6 +188,123 @@ class ApiClientImpl implements ApiClient {
     final response = await _authenticated(() => httpClient.requestMultipart(
           method: 'POST',
           path: '/identity/records/$recordId/documents/$kind',
+          fileFieldName: 'file',
+          filePath: filePath,
+          headers: _authHeaders(),
+        ));
+    return UploadedDocumentDto(
+      id: response['id'] as String,
+      kind: response['kind'] as String,
+      fileReference: response['file_reference'] as String,
+    );
+  }
+
+  LivenessStatusDto _statusFrom(Map<String, dynamic> json) {
+    final override = json['override'] as Map<String, dynamic>?;
+    return LivenessStatusDto(
+      caseStatus: json['case_status'] as String,
+      attemptsUsed: json['attempts_used'] as int,
+      attemptsCompleted: json['attempts_completed'] as int,
+      maxAttempts: json['max_attempts'] as int,
+      attemptsRemaining: json['attempts_remaining'] as int,
+      attestedPassRecorded: json['attested_pass_recorded'] as bool,
+      openAttemptId: json['open_attempt_id'] as String?,
+      override: override == null
+          ? null
+          : LivenessOverrideDto(method: override['method'] as String, decision: override['decision'] as String),
+    );
+  }
+
+  @override
+  Future<LivenessStatusDto> fetchLivenessStatus(String caseId) async {
+    final response = await _authenticated(() => httpClient.request(
+          method: 'GET',
+          path: '/cases/$caseId/liveness-status',
+          headers: _authHeaders(),
+        ));
+    return _statusFrom(response);
+  }
+
+  @override
+  Future<LivenessAttemptDto> beginLivenessAttempt(String caseId) async {
+    final response = await _authenticated(() => httpClient.request(
+          method: 'POST',
+          path: '/cases/$caseId/liveness-attempts',
+          headers: _authHeaders(),
+        ));
+    return LivenessAttemptDto(
+      attemptId: response['attempt_id'] as String,
+      attemptNumber: response['attempt_number'] as int,
+      status: _statusFrom(response),
+    );
+  }
+
+  @override
+  Future<LivenessStatusDto> recordLivenessAttemptOutcome({
+    required String caseId,
+    required String attemptId,
+    required bool attestedLivenessVerdict,
+    required Map<String, dynamic> attestedAntiSpoofingFlags,
+    String? attestedSessionId,
+  }) async {
+    final response = await _authenticated(() => httpClient.request(
+          method: 'POST',
+          path: '/cases/$caseId/liveness-attempts/$attemptId/outcome',
+          headers: _authHeaders(),
+          body: {
+            'attested_liveness_verdict': attestedLivenessVerdict,
+            'attested_anti_spoofing_flags': attestedAntiSpoofingFlags,
+            if (attestedSessionId != null) 'attested_session_id': attestedSessionId,
+          },
+        ));
+    return _statusFrom(response);
+  }
+
+  @override
+  Future<AttestedLivenessResultDto> submitAttestedLiveness({
+    required String recordId,
+    required bool attestedLivenessVerdict,
+    required Map<String, dynamic> attestedAntiSpoofingFlags,
+    String? attestedSessionId,
+    String? attestedDetector,
+  }) async {
+    final response = await _authenticated(() => httpClient.request(
+          method: 'POST',
+          path: '/identity/records/$recordId/verifications/device_liveness',
+          headers: _authHeaders(),
+          body: {
+            // The backend's generic field, not a claim: the payload below is.
+            'field_checked': 'liveness',
+            'payload': {
+              'attested_liveness_verdict': attestedLivenessVerdict,
+              'attested_anti_spoofing_flags': attestedAntiSpoofingFlags,
+              if (attestedSessionId != null) 'attested_session_id': attestedSessionId,
+              if (attestedDetector != null) 'attested_detector': attestedDetector,
+            },
+          },
+        ));
+    final result = response['result'] as String?;
+    if (result == null || !result.startsWith('attested_')) {
+      // Anything else means a different provider answered (e.g. the mock
+      // "liveness" one): never let that be read as an attested claim.
+      throw const ParseException();
+    }
+    return AttestedLivenessResultDto(
+      id: response['id'] as String,
+      result: result,
+      provider: response['provider'] as String,
+    );
+  }
+
+  @override
+  Future<UploadedDocumentDto> uploadBusinessDocument({
+    required String businessRecordId,
+    required String kind,
+    required String filePath,
+  }) async {
+    final response = await _authenticated(() => httpClient.requestMultipart(
+          method: 'POST',
+          path: '/identity/business-records/$businessRecordId/documents/$kind',
           fileFieldName: 'file',
           filePath: filePath,
           headers: _authHeaders(),

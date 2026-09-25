@@ -126,10 +126,10 @@ class FlowNotifier extends StateNotifier<FlowViewState> {
 
   /// Records [values] for the current stage and advances — a local move,
   /// no network call.
-  void submitStage(Map<String, dynamic> values) {
+  void submitStage(Map<String, dynamic> values, {Map<String, dynamic> remembered = const {}}) {
     final current = state;
     if (current is! FlowViewReady) return;
-    final next = current.caseState.advanced(values);
+    final next = current.caseState.advanced(values, remembered: remembered);
     state = FlowViewReady(next);
     _repository.saveCaseState(next);
   }

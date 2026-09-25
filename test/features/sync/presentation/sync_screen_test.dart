@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:sdui_demo/features/sync/data/sync_repository_impl.dart';
 import 'package:sdui_demo/features/sync/domain/sync_repository.dart';
 import 'package:sdui_demo/features/sync/domain/sync_status.dart';
 import 'package:sdui_demo/features/sync/presentation/sync_screen.dart';
@@ -26,6 +27,7 @@ class _FakeSyncRepository implements SyncRepository {
     required String? caseId,
     required Map<String, dynamic> values,
     required Map<String, String> mediaFilesByStage,
+    Map<String, Map<String, dynamic>> attestedLivenessByStage = const {},
   }) {
     submitCaseCallCount++;
     lastCaseId = caseId;
@@ -57,6 +59,59 @@ void main() {
     // SyncSucceeded should have told the flow session to clear its saved
     // state — no need to resume a case that's already synced.
     expect(session.clearSavedCallCount, 1);
+  });
+
+  testWidgets(
+      'end to end through the real SyncRepositoryImpl: an individual and a business capture reach their own endpoints',
+      (tester) async {
+    final api = FakeApiClient()
+      ..recordIdToReturn = 'record-1'
+      ..businessRecordIdToReturn = 'business-1';
+    final session = FakeFlowSession(apiClient: api, allValues: const {
+      'personal_info.full_name': 'Ada',
+      'business_info.business_name': 'Ada Ltd',
+      'identification_card.filePath': '/tmp/id.jpg',
+      'trade_license.filePath': '/tmp/license.jpg',
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(home: SyncScreen(controller: session, repository: SyncRepositoryImpl(apiClient: api))),
+    );
+    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Case synced successfully'), findsOneWidget);
+    expect(api.uploadDocumentCalls.map((c) => '${c['recordId']}/${c['kind']}'), ['record-1/identification_card']);
+    expect(api.uploadBusinessDocumentCalls.map((c) => '${c['businessRecordId']}/${c['kind']}'),
+        ['business-1/trade_license']);
+  });
+
+  testWidgets('the screen hands the repository each stage\'s attested liveness claim and its image', (tester) async {
+    final api = FakeApiClient()..recordIdToReturn = 'record-1';
+    final session = FakeFlowSession(apiClient: api, allValues: const {
+      'personal_info.full_name': 'Ada',
+      'selfie_liveness.filePath': '/tmp/selfie.jpg',
+      'selfie_liveness.attestedLiveness': {
+        'attestedLivenessVerdict': true,
+        'attestedAntiSpoofingFlags': {'motionCorrelationCheckFailed': false},
+        'attestedSessionId': 's-1',
+        'attestedDetector': 'smart_liveliness_detection 0.3.9',
+        'attestedAttemptsUsed': 1,
+      },
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(home: SyncScreen(controller: session, repository: SyncRepositoryImpl(apiClient: api))),
+    );
+    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Case synced successfully'), findsOneWidget);
+    expect(api.uploadDocumentCalls.single['kind'], 'profile_picture');
+    expect(api.submitAttestedLivenessCalls.single['attestedLivenessVerdict'], true);
+    expect(api.submitAttestedLivenessCalls.single['recordId'], 'record-1');
   });
 
   testWidgets('retry re-submits through the same injected repository', (tester) async {

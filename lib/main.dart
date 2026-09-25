@@ -11,10 +11,14 @@ import 'features/flow/domain/flow_repository.dart';
 import 'features/flow/presentation/flow_notifier.dart';
 import 'features/flow/presentation/flow_screen.dart';
 import 'features/flow/presentation/resume_choice_screen.dart';
+import 'features/stac_rendering/presentation/stac_bootstrap.dart';
 import 'services/api_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Registers the kneth_* Stac parsers. Cheap, and only used if the Stac
+  // renderer is used (it is the only one).
+  ensureKnethStacInitialized();
 
   // Real Keycloak login, wired for real now (NOTES.md's Phase 1) — not a
   // commented-out alternative the way ApiClientImpl is below. Base URL
@@ -62,9 +66,7 @@ Future<void> main() async {
         authRepositoryProvider.overrideWithValue(authRepository),
         authNotifierProvider.overrideWith((ref) => authNotifier),
       ],
-      // Also required by kifiya_rendering_engine's DynamicForm (a Riverpod
-      // ConsumerWidget). Each GENERIC_FORM stage additionally nests its own
-      // scoped override — see RenderingEngineStageScreen.
+      // Root scope for the flow, auth and client-selection providers overridden above.
       child: SduiDemoApp(flowRepository: flowRepository),
     ),
   );

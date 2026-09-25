@@ -1,0 +1,575 @@
+{
+    "case_id": "c28890cc-72c7-4ba2-a9c2-618c0ed59d82",
+    "workflow_version": [
+        "personal_info",
+        "identification_card",
+        "association_details",
+        "location",
+        "length_rules",
+        "unicode_rules",
+        "business_info",
+        "trade_license",
+        "selfie_liveness"
+    ],
+    "stages": [
+        {
+            "stageId": "personal_info",
+            "title": "personal_info",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "fields": [
+                {
+                    "key": "birth_date",
+                    "label": "birth_date",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "full_name",
+                    "label": "full_name",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "gender",
+                    "label": "gender",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "mother_name",
+                    "label": "mother_name",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "national_id",
+                    "label": "national_id",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "nationality",
+                    "label": "nationality",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "phone",
+                    "label": "phone",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 0,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "stageId": "identification_card",
+            "title": "identification_card",
+            "screenType": "NATIVE_CAPTURE",
+            "nativeHandler": "photo_capture",
+            "fields": []
+        },
+        {
+            "stageId": "association_details",
+            "title": "association_details",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "fields": [
+                {
+                    "key": "association_type",
+                    "label": "association_type",
+                    "type": "SELECT",
+                    "inputMode": "ENUM",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": [
+                            {
+                                "label": "Individual",
+                                "value": "Individual"
+                            },
+                            {
+                                "label": "Group",
+                                "value": "Group"
+                            }
+                        ],
+                        "dynamicConfig": null,
+                        "order": 1,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "company_name",
+                    "label": "company_name",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": true,
+                        "dependsOn": [
+                            "association_type"
+                        ],
+                        "conditionalDependency": {
+                            "if": [
+                                {
+                                    "op": "eq",
+                                    "field": "association_type",
+                                    "value": "Group"
+                                }
+                            ],
+                            "then": {
+                                "isHidden": false,
+                                "isRequired": true
+                            },
+                            "else": {
+                                "isHidden": true,
+                                "isRequired": false
+                            }
+                        },
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 2,
+                        "minLen": null,
+                        "maxLen": 60,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "stageId": "location",
+            "title": "location",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "fields": [
+                {
+                    "key": "district",
+                    "label": "district",
+                    "type": "SELECT",
+                    "inputMode": "DYNAMIC",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [
+                            "region"
+                        ],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": {
+                            "endpoint": "/reference-data/regions/{region}/districts",
+                            "method": "GET"
+                        },
+                        "order": 2,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "postal_code",
+                    "label": "postal_code",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 3,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": "^[0-9]{4}$"
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "region",
+                    "label": "region",
+                    "type": "SELECT",
+                    "inputMode": "ENUM",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": [
+                            {
+                                "label": "Addis Ababa",
+                                "value": "4b42dc7e-1335-46e8-8090-5867233bb928"
+                            },
+                            {
+                                "label": "Oromia",
+                                "value": "7f1bed2a-1263-4a73-a01b-af045aa0d88d"
+                            }
+                        ],
+                        "dynamicConfig": null,
+                        "order": 1,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "registration_date",
+                    "label": "registration_date",
+                    "type": "TEXT",
+                    "inputMode": "DATE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 4,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "stageId": "length_rules",
+            "title": "length_rules",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "fields": [
+                {
+                    "key": "notes",
+                    "label": "notes",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 3,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "reference_code",
+                    "label": "reference_code",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 1,
+                        "minLen": 3,
+                        "maxLen": 6,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "tin_number",
+                    "label": "tin_number",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 2,
+                        "minLen": 5,
+                        "maxLen": 10,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "stageId": "unicode_rules",
+            "title": "unicode_rules",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "fields": [
+                {
+                    "key": "am_name",
+                    "label": "am_name",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 1,
+                        "minLen": 2,
+                        "maxLen": 8,
+                        "regex": "^[\\p{L}\\p{M}\\s/'.-]{1,64}$"
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "opt_code",
+                    "label": "opt_code",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 3,
+                        "minLen": 3,
+                        "maxLen": null,
+                        "regex": "^[0-9]+$"
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "single_char",
+                    "label": "single_char",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 2,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": "^.$"
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "stageId": "business_info",
+            "title": "business_info",
+            "screenType": "GENERIC_FORM",
+            "nativeHandler": null,
+            "fields": [
+                {
+                    "key": "business_name",
+                    "label": "business_name",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 2,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "business_type",
+                    "label": "business_type",
+                    "type": "SELECT",
+                    "inputMode": "ENUM",
+                    "property": {
+                        "isRequired": true,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": [
+                            {
+                                "label": "registered",
+                                "value": "registered"
+                            },
+                            {
+                                "label": "unregistered",
+                                "value": "unregistered"
+                            }
+                        ],
+                        "dynamicConfig": null,
+                        "order": 1,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                },
+                {
+                    "key": "tin",
+                    "label": "tin",
+                    "type": "TEXT",
+                    "inputMode": "FREE",
+                    "property": {
+                        "isRequired": false,
+                        "isHidden": false,
+                        "dependsOn": [],
+                        "conditionalDependency": null,
+                        "options": null,
+                        "dynamicConfig": null,
+                        "order": 3,
+                        "minLen": null,
+                        "maxLen": null,
+                        "regex": null
+                    },
+                    "prefill": null,
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "stageId": "trade_license",
+            "title": "trade_license",
+            "screenType": "NATIVE_CAPTURE",
+            "nativeHandler": "photo_capture",
+            "fields": []
+        },
+        {
+            "stageId": "selfie_liveness",
+            "title": "selfie_liveness",
+            "screenType": "NATIVE_CAPTURE",
+            "nativeHandler": "liveness_capture",
+            "fields": []
+        }
+    ]
+}

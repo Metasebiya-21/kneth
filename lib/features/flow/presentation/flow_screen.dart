@@ -3,15 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../services/app_exception.dart';
 import '../../../widgets/app_error_view.dart';
-import '../../native_capture/presentation/photo_capture_screen.dart';
-import '../../native_capture/presentation/signature_capture_screen.dart';
+import '../../stac_rendering/presentation/stac_flow_stage_screen.dart';
 import '../../sync/presentation/sync_screen.dart';
 import '../domain/flow_case_state.dart';
 import '../domain/flow_manifest.dart';
 import '../domain/stage_config.dart';
 import 'flow_notifier.dart';
 import 'flow_session.dart';
-import 'rendering_engine_stage_screen.dart';
+import 'summary_value.dart';
 
 /// The flow feature's entry screen: kicks off [FlowNotifier.start] or
 /// [FlowNotifier.resume] once mounted (deferred via a post-frame callback
@@ -88,9 +87,23 @@ class _FlowScreenState extends ConsumerState<FlowScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: values.entries
-                  .map((entry) => ListTile(
-                        title: Text(entry.key),
-                        trailing: Text('${entry.value}'),
+                  // A key/value row that wraps, not a ListTile with the value as
+                  // `trailing`: an unbounded trailing Text throws a layout
+                  // exception for any long value (e.g. a free-text note), which
+                  // used to crash this whole screen.
+                  .map((entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 2, child: Text(entry.key)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 3,
+                              child: SummaryValueText(caseState: caseState, payloadKey: entry.key, value: entry.value),
+                            ),
+                          ],
+                        ),
                       ))
                   .toList(),
             ),
@@ -111,45 +124,11 @@ class _FlowScreenState extends ConsumerState<FlowScreen> {
 
   Widget _buildStage(BuildContext context, FlowSession session, FlowCaseState caseState) {
     final stage = caseState.currentStage;
-    switch (stage.screenType) {
-      case ScreenType.genericForm:
-        return RenderingEngineStageScreen(
-          key: ValueKey('generic-${stage.stageId}'),
-          stage: stage,
-        );
-      case ScreenType.nativeCapture:
-        return _buildNativeCapture(context, session, stage);
-      case ScreenType.unknown:
-        return _buildUnsupportedStage(session, stage);
-    }
-  }
-
-  Widget _buildNativeCapture(BuildContext context, FlowSession session, StageConfig stage) {
-    switch (stage.nativeHandler) {
-      case NativeHandler.photoCapture:
-        return PhotoCaptureScreen(controller: session, stage: stage);
-      case NativeHandler.signatureCapture:
-        return SignatureCaptureScreen(controller: session, stage: stage);
-      case NativeHandler.unknown:
-        return _buildNativeCapturePlaceholder(session, stage);
-    }
-  }
-
-  Widget _buildNativeCapturePlaceholder(FlowSession session, StageConfig stage) {
-    return Scaffold(
-      appBar: AppBar(title: Text(session.progressLabel)),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.document_scanner_outlined, size: 64),
-            const SizedBox(height: 16),
-            Text('${stage.title} — native capture goes here'),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _continueButton(() => session.submitStage({})),
-    );
+    // Every recognized stage (forms and native capture alike) is rendered from
+    // the Stac manifest; only a screen type this app version doesn't know falls
+    // back to the plain "unsupported" screen.
+    if (stage.screenType == ScreenType.unknown) return _buildUnsupportedStage(session, stage);
+    return StacFlowStageScreen(key: ValueKey('stac-${stage.stageId}'), stage: stage);
   }
 
   Widget _buildUnsupportedStage(FlowSession session, StageConfig stage) {
@@ -157,18 +136,6 @@ class _FlowScreenState extends ConsumerState<FlowScreen> {
       appBar: AppBar(title: Text(session.progressLabel)),
       body: Center(
         child: Text('Unsupported stage: ${stage.title}'),
-      ),
-    );
-  }
-
-  Widget _continueButton(VoidCallback onPressed) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          child: const Text('Continue'),
-        ),
       ),
     );
   }

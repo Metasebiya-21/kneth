@@ -16,10 +16,14 @@
 //   polling helper was needed.
 // - RenderRepaintBoundary under testWidgets: not applicable, flow renders
 //   no canvas/image content itself.
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:sdui_demo/features/flow/data/stac_manifest_mapper.dart';
 import 'package:sdui_demo/features/flow/domain/flow_manifest.dart';
 import 'package:sdui_demo/features/flow/presentation/flow_notifier.dart';
 import 'package:sdui_demo/features/flow/presentation/flow_screen.dart';
@@ -28,21 +32,11 @@ import 'package:sdui_demo/services/app_exception.dart';
 import '../../../support/fake_api_client.dart';
 import '../../../support/fake_flow_repository.dart';
 
-const List<Map<String, dynamic>> _stages = [
-  {
-    'stageId': 'stage_a',
-    'title': 'Stage A',
-    'screenType': 'GENERIC_FORM',
-    'fields': <Map<String, dynamic>>[],
-  },
-  {
-    'stageId': 'stage_b',
-    'title': 'Stage B',
-    'screenType': 'NATIVE_CAPTURE',
-    'nativeHandler': 'unrecognized_handler',
-    'fields': <Map<String, dynamic>>[],
-  },
-];
+/// Stac JSON for the two stages, produced by the backend's real serializer.
+List<Map<String, dynamic>> _stacStages() {
+  final ported = jsonDecode(File('test/fixtures/stac/ported_fixtures.json').readAsStringSync()) as Map<String, dynamic>;
+  return [(ported['stage_a'] as Map).cast<String, dynamic>(), (ported['stage_b'] as Map).cast<String, dynamic>()];
+}
 
 Widget _app(FakeFlowRepository repository) {
   return ProviderScope(
@@ -57,30 +51,8 @@ Widget _app(FakeFlowRepository repository) {
 }
 
 void main() {
-  testWidgets('starts fresh, renders the first stage, advances through to completion', (tester) async {
-    final repository = FakeFlowRepository(stagesJson: _stages);
-
-    await tester.pumpWidget(_app(repository));
-    await tester.pump(); // let the loading spinner show
-    await tester.pump(); // let the deferred initState load land
-
-    expect(find.text('Stage A'), findsOneWidget);
-    expect(repository.fetchManifestCallCount, 1);
-
-    // GENERIC_FORM stage with no fields — Continue should submit trivially.
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-    await tester.pump();
-
-    // Now on the NATIVE_CAPTURE placeholder (unrecognized handler).
-    expect(find.textContaining('native capture goes here'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-    await tester.pump();
-
-    expect(find.text('Flow complete'), findsOneWidget);
-    // Fetched once for the whole case, never per stage.
-    expect(repository.fetchManifestCallCount, 1);
-  });
+  // 'starts fresh, renders the first stage, advances through to completion' lives on as the
+  // ported version in stac_rendering/ported_flow_tests_test.dart (Stac is the only renderer now).
 
   testWidgets('a failed load shows the error screen with a working retry', (tester) async {
     // A retryable AppException, not a bare Exception — AppErrorView (see
@@ -89,19 +61,17 @@ void main() {
     // retry works, so the fixture needs to be a failure that's actually
     // retryable, the same discipline every other AppErrorView-backed
     // test in this codebase already follows.
-    final repository = FakeFlowRepository(stagesJson: _stages)..fetchManifestError = const NetworkException();
+    final repository = FakeFlowRepository(stagesJson: stacStagesToStageJson(_stacStages()))..fetchManifestError = const NetworkException();
 
     await tester.pumpWidget(_app(repository));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.textContaining('offline'), findsOneWidget);
 
     repository.fetchManifestError = null;
     await tester.tap(find.widgetWithText(ElevatedButton, 'Retry'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.text('Stage A'), findsOneWidget);
+    expect(find.text('stage_a'), findsOneWidget);
   });
 }

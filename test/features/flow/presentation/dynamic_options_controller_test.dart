@@ -74,7 +74,7 @@ void main() {
 
     expect(apiClient.fetchOptionsFieldKeys, ['district']);
     final ready = controller.state['district'] as DynamicFieldOptionsReady;
-    expect(ready.options, ['Bole', 'Yeka']);
+    expect(ready.fieldOptions.map((o) => o.label).toList(), ['Bole', 'Yeka']);
   });
 
   test('changing the dependency clears the dependent field and re-fetches its own list', () async {
@@ -90,7 +90,7 @@ void main() {
 
     controller.sync(const {'region': 'addis_ababa'});
     await Future<void>.delayed(Duration.zero);
-    expect((controller.state['district'] as DynamicFieldOptionsReady).options, ['Bole']);
+    expect((controller.state['district'] as DynamicFieldOptionsReady).fieldOptions.map((o) => o.label), ['Bole']);
 
     final cleared = controller.sync(const {'region': 'oromia', 'district': 'bole'});
     // Confirmed cleared *before* the new fetch resolves — a caller must
@@ -103,7 +103,7 @@ void main() {
 
     expect(apiClient.fetchOptionsFieldKeys, ['district', 'district']);
     final ready = controller.state['district'] as DynamicFieldOptionsReady;
-    expect(ready.options, ['Adama']); // the NEW region's list, not the old one's
+    expect(ready.fieldOptions.map((o) => o.label).toList(), ['Adama']); // the NEW region's list, not the old one's
   });
 
   test('an unrelated field changing does not re-fetch', () async {
@@ -136,7 +136,7 @@ void main() {
     expect(controller.state['district'], isA<DynamicFieldOptionsLoading>());
     await Future<void>.delayed(Duration.zero);
 
-    expect((controller.state['district'] as DynamicFieldOptionsReady).options, ['Bole']);
+    expect((controller.state['district'] as DynamicFieldOptionsReady).fieldOptions.map((o) => o.label), ['Bole']);
   });
 
   test('the confirmed route\'s clientId/workflowId/fieldKey/dependencyValues are all threaded through', () async {
