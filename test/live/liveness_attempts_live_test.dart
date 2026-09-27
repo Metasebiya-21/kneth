@@ -20,15 +20,14 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:sdui_demo/features/auth/data/keycloak_auth_repository_impl.dart';
+import 'package:sdui_demo/features/auth/data/backend_auth_repository_impl.dart';
 import 'package:sdui_demo/services/api_client_impl.dart';
 import 'package:sdui_demo/services/api_http_client.dart';
 import 'package:sdui_demo/services/app_exception.dart';
 
 const _backend = 'http://127.0.0.1:8000';
-const _keycloak = 'http://127.0.0.1:8080';
-const _agentUsername = '826dfc90-f28b-4dde-806e-f15ab51c8e84';
-const _agentPassword = 'dev-agent-password-123';
+const _agentUsername = 'tagent';
+const _agentPassword = 'test#123';
 const _clientIdInDb = 'e8ce7cac-22fb-4858-8328-bd62297c7e75';
 
 class _InMemorySecureStorage extends FlutterSecureStoragePlatform {
@@ -62,15 +61,15 @@ void main() {
   late String clientId;
   late String workflowId;
 
-  Future<(ApiClientImpl, KeycloakAuthRepositoryImpl)> freshLoginFor(String username, String password) async {
+  Future<(ApiClientImpl, BackendAuthRepositoryImpl)> freshLoginFor(String username, String password) async {
     FlutterSecureStoragePlatform.instance = _InMemorySecureStorage();
-    final auth = KeycloakAuthRepositoryImpl(keycloakBaseUrl: _keycloak);
+    final auth = BackendAuthRepositoryImpl(baseUrl: _backend);
     await auth.login(username: username, password: password);
     return (ApiClientImpl(httpClient: ApiHttpClient(baseUrl: _backend), authTokenProvider: auth), auth);
   }
 
   /// A brand-new client with no state at all: a relaunched app.
-  Future<(ApiClientImpl, KeycloakAuthRepositoryImpl)> freshLaunch() => freshLoginFor(_agentUsername, _agentPassword);
+  Future<(ApiClientImpl, BackendAuthRepositoryImpl)> freshLaunch() => freshLoginFor(_agentUsername, _agentPassword);
 
   setUpAll(() async {
     HttpOverrides.global = null;

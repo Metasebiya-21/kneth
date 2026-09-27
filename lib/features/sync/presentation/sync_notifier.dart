@@ -25,9 +25,17 @@ final syncRepositoryProvider = Provider<SyncRepository>((ref) {
 
 /// Exposes the in-progress [SyncStatus] to widgets, and lets them trigger
 /// (or retry) a submission via [SyncNotifier.submit].
-final syncNotifierProvider = StateNotifierProvider.autoDispose<SyncNotifier, SyncStatus>((ref) {
-  return SyncNotifier(ref.watch(syncRepositoryProvider));
-});
+///
+/// `dependencies` is required, not decorative: [SyncScreen]'s override of
+/// [syncRepositoryProvider] lives in a NESTED `ProviderScope` (main.dart's is
+/// the root). Without declaring the dependency, Riverpod creates this
+/// notifier in the root scope, where the repository was never overridden,
+/// and it throws "has no default" — found on a real device; a test that
+/// nests SyncScreen under an outer scope now covers it.
+final syncNotifierProvider = StateNotifierProvider.autoDispose<SyncNotifier, SyncStatus>(
+  (ref) => SyncNotifier(ref.watch(syncRepositoryProvider)),
+  dependencies: [syncRepositoryProvider],
+);
 
 /// Why [StateNotifier] and not [AsyncNotifier]: [AsyncNotifier] is shaped
 /// for "run one Future, get one value back" (its state is

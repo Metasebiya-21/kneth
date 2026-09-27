@@ -13,13 +13,13 @@ abstract class AuthTokenProvider {
 }
 
 /// A manual stub, kept even now that real login exists
-/// (`lib/features/auth/`'s `KeycloakAuthRepositoryImpl`) — investigated,
+/// (`lib/features/auth/`'s `BackendAuthRepositoryImpl`) — investigated,
 /// not left over by accident (see NOTES.md's Phase 1). `MockApiClient`
 /// remains this app's default `ApiClient` (see main.dart), and this class
 /// is still useful specifically for exercising `ApiClientImpl` directly
 /// (e.g. from a test or a REPL) without going through the real login
 /// flow at all — a plain settable field a developer can populate by hand
-/// (e.g. paste in a token obtained from Keycloak directly). A genuinely
+/// (e.g. paste in a token obtained from `POST /auth/login` directly). A genuinely
 /// different use case from real login, not a redundant one: real login
 /// is how the app is actually used; this is a developer convenience for
 /// exercising the network layer in isolation. Starts with no token

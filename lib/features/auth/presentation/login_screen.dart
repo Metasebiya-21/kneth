@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../widgets/app_error_view.dart';
+import '../../../widgets/password_field.dart';
 import 'auth_notifier.dart';
+import 'forgot_password_screen.dart';
 
 /// The app's entry screen whenever there's no valid stored session (see
 /// `SduiDemoApp` in main.dart, which reactively swaps between this and
@@ -30,6 +32,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _forgotPassword() async {
+    final username = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => ForgotPasswordScreen(initialUsername: _usernameController.text.trim())),
+    );
+    if (username == null || !mounted) return;
+    _usernameController.text = username;
+    _passwordController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password reset. Sign in with your new password.')),
+    );
   }
 
   void _submit() {
@@ -66,18 +80,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                PasswordField(
                   controller: _passwordController,
                   enabled: !isLoggingIn,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
+                  labelText: 'Password',
                   textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
                   onSubmitted: (_) => isLoggingIn ? null : _submit(),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: isLoggingIn ? null : _submit,
                   child: Text(isLoggingIn ? 'Signing in...' : 'Sign in'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: isLoggingIn ? null : _forgotPassword,
+                  child: const Text('Forgot password?'),
                 ),
               ],
             ),

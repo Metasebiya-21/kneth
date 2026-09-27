@@ -6,9 +6,10 @@ import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../services/app_exception.dart';
 import '../domain/auth_repository.dart';
+import '../domain/password_change_required.dart';
 import '../domain/token_refresh_policy.dart';
 
-/// See main.dart for the override (a real `KeycloakAuthRepositoryImpl`).
+/// See main.dart for the override (a real `BackendAuthRepositoryImpl`).
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   throw UnimplementedError(
     'authRepositoryProvider has no default — it must be overridden, see main.dart.',
@@ -53,6 +54,20 @@ class AuthFailed extends AuthState {
   const AuthFailed(this.error);
 }
 
+/// The password was right, but it's a temporary one the backend won't issue
+/// tokens for until it's replaced (backend NOTES.md, Phase 25). `main.dart`
+/// shows the change-password screen for this state. [submitting] and
+/// [error] are that screen's own in-progress/failed substates — kept here,
+/// not in the screen, because completing the change also logs in, which is
+/// this notifier's job.
+class AuthPasswordChangeRequired extends AuthState {
+  final String username;
+  final bool submitting;
+  final AppException? error;
+
+  const AuthPasswordChangeRequired({required this.username, this.submitting = false, this.error});
+}
+
 /// Owns the login/logout lifecycle and a background token-refresh loop —
 /// see `token_refresh_policy.dart`'s own doc comment for why this exists
 /// at all (keeping `AuthTokenProvider.currentToken()` synchronous, per
@@ -88,6 +103,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthLoggingIn();
     try {
       await _repository.login(username: username, password: password);
+    } on PasswordChangeRequiredException catch (e) {
+      state = AuthPasswordChangeRequired(username: e.username);
+      return;
     } on AppException catch (e) {
       state = AuthFailed(e);
       return;
@@ -105,6 +123,66 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // unrelated concerns; only the former should ever produce AuthFailed.
     state = const AuthLoggedIn();
     _startBackgroundRefresh();
+  }
+
+  /// Replaces the temporary password and then logs in with the new one —
+  /// the backend's own live-tested sequence (`/auth/login` -> 403 ->
+  /// `/auth/password/change` -> `/auth/login`), so the agent lands signed
+  /// in rather than back on an empty login screen. Only valid from
+  /// [AuthPasswordChangeRequired]; a no-op otherwise.
+  ///
+  /// A failed change keeps the agent on the change screen with the error.
+  /// A failed login AFTER a successful change is reported on the login
+  /// screen instead ([AuthFailed]) — the password has changed by then, so
+  /// the change screen is no longer the right place to retry from.
+  Future<void> completePasswordChange({required String currentPassword, required String newPassword}) async {
+    final current = state;
+    if (current is! AuthPasswordChangeRequired || current.submitting) return;
+    final username = current.username;
+    state = AuthPasswordChangeRequired(username: username, submitting: true);
+    try {
+      await _repository.changePassword(
+        username: username,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+    } on AppException catch (e) {
+      state = AuthPasswordChangeRequired(username: username, error: e);
+      return;
+    } catch (e) {
+      state = AuthPasswordChangeRequired(username: username, error: UnknownException(e.toString()));
+      return;
+    }
+    // The repository directly, not [login]: [login] would pass through
+    // AuthLoggingIn, which `main.dart` renders as the login screen — a
+    // visible flash of an empty form between the change and the signed-in
+    // app. This screen stays in its submitting state until it resolves.
+    try {
+      await _repository.login(username: username, password: newPassword);
+    } on PasswordChangeRequiredException {
+      // The change went through but the backend STILL won't sign this
+      // account in — some other pending account action (backend NOTES.md,
+      // Phase 25, "Other limits"). Nothing the agent can fix from here.
+      state = const AuthFailed(ForbiddenException(
+        'Your password was changed, but this account still needs setup before it can sign in. '
+        'Please contact your supervisor.',
+      ));
+      return;
+    } on AppException catch (e) {
+      state = AuthFailed(e);
+      return;
+    } catch (e) {
+      state = AuthFailed(UnknownException(e.toString()));
+      return;
+    }
+    // Outside the try, for the same reason as in [login].
+    state = const AuthLoggedIn();
+    _startBackgroundRefresh();
+  }
+
+  /// Leaves the change-password screen for the login screen, unchanged.
+  void cancelPasswordChange() {
+    if (state is AuthPasswordChangeRequired) state = const AuthLoggedOut();
   }
 
   Future<void> logout() async {

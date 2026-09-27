@@ -1,6 +1,6 @@
 // A genuinely LIVE test — real HTTP, real Postgres, real Keycloak, real Redis,
 // nothing mocked at the transport level — driving the actual round trip
-// through this app's own Dart code (KeycloakAuthRepositoryImpl,
+// through this app's own Dart code (BackendAuthRepositoryImpl,
 // ApiClientImpl), not just curl against the backend directly.
 //
 // Correction (2026-09-24). NOTES.md's Phase 5 recorded that this file "could
@@ -33,7 +33,7 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:sdui_demo/features/auth/data/keycloak_auth_repository_impl.dart';
+import 'package:sdui_demo/features/auth/data/backend_auth_repository_impl.dart';
 import 'package:sdui_demo/services/api_client_impl.dart';
 import 'package:sdui_demo/services/api_http_client.dart';
 
@@ -41,7 +41,7 @@ import 'package:sdui_demo/services/api_http_client.dart';
 /// flutter_secure_storage implementation registered, so the real plugin's
 /// method channel would just fail — this test doesn't need persistence to
 /// survive across runs anyway, only for `login()`'s own `_persist()` call
-/// to succeed. Same fake shape as keycloak_auth_repository_impl_test.dart.
+/// to succeed. Same fake shape as backend_auth_repository_impl_test.dart.
 class _InMemorySecureStoragePlatform extends FlutterSecureStoragePlatform {
   final Map<String, String> _values = {};
 
@@ -70,14 +70,13 @@ class _InMemorySecureStoragePlatform extends FlutterSecureStoragePlatform {
 }
 
 const _backendBaseUrl = 'http://127.0.0.1:8000';
-const _keycloakBaseUrl = 'http://127.0.0.1:8080';
 
 // From this run's own seed data (NOTES.md's Phase 5) — a real
 // identity.agents row, linked to a real Keycloak user, assigned to a real
 // seeded client/workflow. Not secrets in any real sense (a throwaway local
 // dev realm), but still not a fixture to reuse against anything real.
-const _agentUsername = '826dfc90-f28b-4dde-806e-f15ab51c8e84';
-const _agentPassword = 'dev-agent-password-123';
+const _agentUsername = 'tagent';
+const _agentPassword = 'test#123';
 
 Future<bool> _backendReachable() async {
   try {
@@ -89,7 +88,7 @@ Future<bool> _backendReachable() async {
 }
 
 void main() {
-  // KeycloakAuthRepositoryImpl.login persists via FlutterSecureStorage,
+  // BackendAuthRepositoryImpl.login persists via FlutterSecureStorage,
   // whose platform channel needs a live Flutter binding even in a plain
   // (non-testWidgets) test.
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -104,13 +103,13 @@ void main() {
     }
 
     FlutterSecureStoragePlatform.instance = _InMemorySecureStoragePlatform();
-    final authRepository = KeycloakAuthRepositoryImpl(keycloakBaseUrl: _keycloakBaseUrl);
+    final authRepository = BackendAuthRepositoryImpl(baseUrl: _backendBaseUrl);
     final apiClient = ApiClientImpl(
       httpClient: ApiHttpClient(baseUrl: _backendBaseUrl),
       authTokenProvider: authRepository,
     );
 
-    // 1. Real Keycloak login (ROPC grant).
+    // 1. Real login, through the backend's /auth/login proxy (ROPC underneath).
     final session = await authRepository.login(username: _agentUsername, password: _agentPassword);
     expect(session.accessToken, isNotEmpty);
 

@@ -1,23 +1,46 @@
 import 'auth_token.dart';
 
 /// The auth feature's port: what the rest of the app can ask it to do
-/// without knowing it's actually a Keycloak ROPC (resource-owner-password-
-/// credentials) client underneath — confirmed as the right grant type by
-/// reading the real realm export directly (`directAccessGrantsEnabled:
-/// true`, `standardFlowEnabled: false`, `publicClient: true` — see
-/// NOTES.md's Phase 1), not assumed from the backend's own test
-/// description alone.
+/// without knowing what's underneath — today the onboarding-platform
+/// backend's own `/auth/*` routes, which proxy Keycloak's password grant
+/// (see NOTES.md, "Auth through the backend's /auth proxy"). It used to be
+/// a direct Keycloak client; nothing above this interface changed when that
+/// was swapped.
 abstract class AuthRepository {
-  /// Logs in via the password grant, persists the resulting tokens, and
-  /// returns them.
+  /// Logs in, persists the resulting tokens, and returns them. Throws
+  /// `PasswordChangeRequiredException` (not an `AppException`) when the
+  /// password was right but must be replaced first — see
+  /// [changePassword].
   Future<AuthToken> login({required String username, required String password});
+
+  /// Replaces [currentPassword] with [newPassword]. Also how a newly hired
+  /// agent's temporary password is replaced. Persists nothing — call
+  /// [login] afterwards.
+  Future<void> changePassword({
+    required String username,
+    required String currentPassword,
+    required String newPassword,
+  });
+
+  /// Asks for a password-reset code to be sent to the account's registered
+  /// phone. Succeeds identically whether or not [username] exists.
+  Future<void> sendPasswordResetCode({required String username});
+
+  /// Issues a fresh code, invalidating the previous one. Same
+  /// no-enumeration behavior as [sendPasswordResetCode].
+  Future<void> resendPasswordResetCode({required String username});
+
+  /// Sets [newPassword] if [code] is the account's current reset code.
+  Future<void> resetPassword({required String username, required String code, required String newPassword});
 
   /// Exchanges the persisted refresh token for a new token pair, persists
   /// the result, and returns it. Throws if there's no refresh token to use
   /// (never logged in, or [logout] already cleared it).
   Future<AuthToken> refresh();
 
-  /// Clears whatever's persisted (memory and secure storage both).
+  /// Clears whatever's persisted (memory and secure storage both), then
+  /// asks the server to end the session, best effort: a failure there is
+  /// swallowed, since the local session is already gone either way.
   Future<void> logout();
 
   /// The full currently-persisted session, if any — loaded from secure
@@ -28,7 +51,7 @@ abstract class AuthRepository {
   /// forced this, not a style choice: whatever implements this also
   /// implements `lib/services/auth_token_provider.dart`'s
   /// `AuthTokenProvider.currentToken()` (see
-  /// `KeycloakAuthRepositoryImpl`'s own doc comment for why one class
+  /// `BackendAuthRepositoryImpl`'s own doc comment for why one class
   /// implements both), which already returns `String?` — the bare access
   /// token, for `ApiClientImpl`'s `Authorization` header. A single class
   /// can't have two methods named `currentToken` returning different

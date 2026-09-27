@@ -3,7 +3,7 @@ import 'package:sdui_demo/features/auth/domain/auth_token.dart';
 
 /// A plain, in-memory fake — no secure storage, no network — for
 /// exercising [AuthNotifier]/`LoginScreen` without a real
-/// `KeycloakAuthRepositoryImpl`. Mirrors `FakeFlowRepository`/
+/// `BackendAuthRepositoryImpl`. Mirrors `FakeFlowRepository`/
 /// `FakeApiClient`'s existing shape in this same directory.
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.loginError, AuthToken? initialSession}) : _session = initialSession;
@@ -61,4 +61,48 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   AuthToken? currentSession() => _session;
+
+  // Password flows: each records its call and throws its configured error,
+  // if any. Scripted per test.
+  Object? changePasswordError;
+  Object? sendCodeError;
+  Object? resendCodeError;
+  Object? resetPasswordError;
+  final List<String> calls = [];
+  final List<Map<String, String>> changePasswordCalls = [];
+  final List<Map<String, String>> resetPasswordCalls = [];
+
+  @override
+  Future<void> changePassword({
+    required String username,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    calls.add('changePassword');
+    changePasswordCalls.add({'username': username, 'current': currentPassword, 'new': newPassword});
+    final error = changePasswordError;
+    if (error != null) throw error;
+  }
+
+  @override
+  Future<void> sendPasswordResetCode({required String username}) async {
+    calls.add('sendCode:$username');
+    final error = sendCodeError;
+    if (error != null) throw error;
+  }
+
+  @override
+  Future<void> resendPasswordResetCode({required String username}) async {
+    calls.add('resendCode:$username');
+    final error = resendCodeError;
+    if (error != null) throw error;
+  }
+
+  @override
+  Future<void> resetPassword({required String username, required String code, required String newPassword}) async {
+    calls.add('resetPassword');
+    resetPasswordCalls.add({'username': username, 'code': code, 'new': newPassword});
+    final error = resetPasswordError;
+    if (error != null) throw error;
+  }
 }

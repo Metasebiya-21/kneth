@@ -1135,7 +1135,7 @@ NOTES.md's prose summary, the actual current source: `app/case/adapters/inbound/
 `docker info` succeeds (daemon reachable) and `docker ps` shows this workspace
 already has Postgres and a Keycloak instance running (up 23 minutes at the time of
 checking, apparently for unrelated reasons — not started by this task). Nothing is
-listening on `localhost:8000`: no `onboarding-platform` API process is currently
+listening on `192.168.1.7:8000`: no `onboarding-platform` API process is currently
 running (confirmed by `curl`, which couldn't connect at all — not a non-2xx
 response, no response). The README's own instructions (`docker compose up -d` then
 `uv run uvicorn app.main:app --reload`) would start it, but doing that wasn't done
@@ -2060,7 +2060,7 @@ one:
   `manage-users` client role) so this could be exercised for real, not
   approximated.
 - **The backend**: `uv sync` (already synced), `uv run uvicorn app.main:app`,
-  reachable at `localhost:8000` for real.
+  reachable at `192.168.1.7:8000` for real.
 - **Seed data**: a client ("Awash Bank"), a workflow ("KYC/KYB collection") with
   three real stages — `personal_info` (GLOBAL, the seven fixed identity fields),
   `identification_card` (TENANT, NATIVE_CAPTURE/photo_capture), `association_details`
@@ -2625,3 +2625,144 @@ unverified as before, and every test here fakes the camera flow and scripts the 
   guard), an agent has one role per client, and platform admins can change and revoke assignments with an audit log. The
   live override tests now use a second real identity (`tool/seed_dev_platform_admin.sh`) instead of simulating one with SQL.
   No mobile code change. See `backend/onboarding-platform/NOTES.md`, Phase 22.
+
+## Auth through the backend's /auth proxy, password flows, debug network log (2026-09-27)
+
+Tags: **[verified]** = ran it (test or live), **[inferred]** = read from code, not exercised, **[unverified]** = could not
+check. Backend contract: `backend/onboarding-platform/NOTES.md`, Phases 23 and 25, and its `app/shared/auth/`
+source (router, schemas, token client, `http_errors.py`), read directly, not from prose.
+
+### The three judgment calls most likely to need revisiting
+
+1. **The first-login 403 is matched by its message text.** `/auth/login` answers a correct temporary password with
+   403 `{"message": "your temporary password must be changed before you can sign in"}`. The backend has no stable
+   code for this (its Phase 25 names the gap), so `BackendAuthRepositoryImpl` compares that exact sentence
+   (trimmed, lowercased) — `passwordChangeRequiredMessage`, pinned by a unit test. Any other 403 stays an ordinary
+   `ForbiddenException`. **If the backend rewords it**, first login stops reaching the change screen; the agent sees
+   the 403's own text on the login screen instead (degraded, not silent). Replace with a code check once one exists.
+   Stacked on top: the backend itself recognises this case by matching Keycloak's `"Account is not fully set up"`.
+2. **Mocked vs. live coverage.** The backend (:8000) and Keycloak were reachable from this machine. Live
+   (`test/live/auth_proxy_live_test.dart`) **[verified]**: login -> token accepted by `GET /clients` -> refresh -> new
+   token accepted -> logout -> the old refresh token is refused (401), so logout really ends the server session; wrong
+   password -> 401 with the backend's text; unknown username -> identical 200 on send/resend and the generic 422 on
+   reset. **Not run live:** the first-login sequence and the forgot-password SMS leg. First login needs
+   `dev-platform-admin` to hire a throwaway agent, and that account's Keycloak password no longer matches the one
+   `tool/seed_dev_platform_admin.sh` documents (it also fails the three pre-existing admin live tests, before any of
+   this change); the test is written and prints `SKIPPED` with the reason. The SMS leg can't complete on the dev stack
+   at all: SMS isn't configured there (`SMS_API_URL`/`SMS_TOKEN_ID` unset), so `/auth/otp/send` for a real account is
+   a 502 and no code exists to enter [inferred from the backend source and the absent env]. Everything else — every
+   endpoint's success/401/403/422/429/502 mapping, both screens' states — is covered with `package:http`'s
+   `MockClient` and widget tests against a fake repository.
+3. **The network log redacts before storing, even in debug.** Values of any key matching
+   `pass|token|otp|secret|authorization|cookie|api-key|input|code` are replaced with `«redacted»` in JSON bodies (at any
+   depth), form bodies, headers and query strings; bodies that can't be redacted by key (plain text, binary, multipart)
+   aren't stored at all, only summarized. `input` is on the list because FastAPI's own 422 echoes the rejected value —
+   seen live: `/auth/password/reset` with a short password returns it in `detail[0].input`. Cost: a secret's value
+   can't be read off the log; the request's shape, status and timing still can. Revisit only if a real debugging need
+   for raw values shows up — and then prefer a local, opt-in toggle over dropping redaction.
+
+### What changed
+
+- **`BackendAuthRepositoryImpl` replaces `KeycloakAuthRepositoryImpl`** (deleted, with its test; every live test now
+  logs in through the new class). Same `AuthRepository` + `AuthTokenProvider` on one class, same secure-storage keys
+  (the tokens are the same Keycloak tokens), so a session saved before the update survives it. `ApiClientImpl`,
+  `token_refresh_policy` and the background refresh loop are unchanged: refresh is still `AuthRepository.refresh()`,
+  only its HTTP call moved [verified: their tests pass untouched]. It goes through `ApiHttpClient` (the backend speaks
+  its JSON/`{"message"}` convention now, which is why the old class couldn't), built with `maxAttempts: 1`: a retried
+  `/auth/otp/send` is a second SMS and a retried change/reset burns a rate-limit attempt. Logout clears the device first,
+  then calls `/auth/logout` best effort. `AuthRepository` gained `changePassword`, `sendPasswordResetCode`,
+  `resendPasswordResetCode`, `resetPassword`.
+- **`ApiHttpClient`, two additions:** an empty 2xx body (`/auth/logout`'s 204) is `{}` instead of a `ParseException`;
+  and FastAPI's `{"detail": [...]}` 422 becomes `"field: msg"` (never reading `input`). A `{"message"}` body still wins.
+- **Base URL:** there was no config mechanism, only literals in `main.dart`; now one `backendBaseUrl` constant there
+  (`http://localhost:8000`), also used by the commented `ApiClientImpl` wiring. On a physical Android device,
+  `localhost` is the phone: run `adb reverse tcp:8000 tcp:8000`. The debug manifest now allows cleartext HTTP (release
+  keeps the platform default). **Unrelated, noticed:** the main `AndroidManifest.xml` has no `INTERNET` permission, so
+  a release build can't reach any backend today [inferred; not changed here].
+- **First-login change (new):** `AuthNotifier` maps `PasswordChangeRequiredException` to a new
+  `AuthPasswordChangeRequired` state (its own navigation epoch in `main.dart`), shown as `ChangePasswordScreen`
+  (temporary password, new, confirm). `completePasswordChange` calls `/auth/password/change` and then signs in with the
+  new password directly, never passing through `AuthLoggingIn` (which would flash the login screen). A failed change
+  stays on the screen with its error; a failed sign-in after a successful change goes to the login screen.
+- **Forgot password (new):** "Forgot password?" on `LoginScreen` opens `ForgotPasswordScreen` (username -> code + new
+  password, one screen so it can pop the username back to the login form). The "code sent" text is fixed and never
+  depends on the response (the backend's no-enumeration design). Resend has a 60 s client-side cooldown: the backend
+  sends no Retry-After or cooldown signal and silently drops sends past its per-account limit (3/hour by default)
+  with the same 200, so without one an agent could burn the hour's sends unknowingly. A 429 on reset (the backend has
+  discarded the code) unlocks resend immediately. Known residual leak, the backend's own: an SMS-gateway failure is a
+  502 that only happens for real accounts; the app shows it as a server error.
+- **Distinct errors:** `AuthErrorBanner` shows 429 ("Too many attempts" + the backend's message; no wait time, since
+  none is sent), 422 ("Check what you entered" + message) and 401 (caller-specific title) separately; offline/5xx go
+  to the shared `AppErrorView`. `password_rules.dart` mirrors the backend's 8-128 / not-unchanged rules so obvious
+  mistakes never cost a rate-limited attempt.
+- **Password visibility:** one `PasswordField` widget (lib/widgets/) used by all six password inputs (login; change:
+  temporary/new/confirm; reset: new/confirm). Suggestions and autocorrect stay off when revealed.
+- **Debug network log:** `NetworkLogClient` (an `http.BaseClient` wrapper — no Dio interceptor tool applies, since
+  `ApiHttpClient` is plain `package:http`) records method, URL, status, timing and redacted bodies into an in-memory
+  ring buffer (200). Three strong jolts within a second (`sensors_plus`' user accelerometer, already in the tree via
+  `smart_liveliness_detection`, now declared directly) open a list, newest first, with a detail view; it's drawn over
+  the app with its own `Navigator` (the app's is rebuilt on every sign-in/out). A real bug caught by its widget test:
+  that second `Navigator` shared `MaterialApp`'s `HeroController` and asserted; fixed with `HeroControllerScope.none`.
+  **Compiled out of release:** it's only constructed behind `kDebugMode` (a compile-time constant) in `main.dart`; see
+  "Release-build check" below for what was and wasn't confirmed.
+
+### Tests
+
+- New, all offline: `backend_auth_repository_impl_test.dart` (24: every endpoint's request shape; 401/403/422/429/502
+  mapping; the pinned 403 text; no retries; persistence across instances; logout best effort), `api_http_client_test`
+  (+3: empty 204, FastAPI `detail`, `message` precedence), `auth_notifier_password_change_test` (9),
+  `change_password_screen_test` (8), `forgot_password_screen_test` (10: carried-over username, identical message for any
+  username, cooldown countdown and resend, 422/429 distinct, 429 unlocking resend, success back to sign-in),
+  `password_field_test` (3), `test/debug/` (14: redaction incl. the echoed `input`, capture under `ApiHttpClient`,
+  ring buffer, shake thresholds/cooldown, shake -> list -> detail -> close). Removed: the Keycloak client's 6.
+- Live: `test/live/auth_proxy_live_test.dart` (4; the first-login one returns early with `SKIPPED` while the admin
+  password is off, so its pass is vacuous today).
+- **Results [verified]:** offline suite (everything but `test/live/`) **447 passed**. Full `flutter test` with the
+  backend up: **471 passed, 4 failed** — the same 4 live tests that failed on the untouched tree before this change
+  (3 because `dev-platform-admin` can't log in, 1 Stac live test on "no live resolver registered for
+  dynamicConfig.endpoint", a backend-side gap). `flutter analyze` and `check_layer_boundaries.sh` clean.
+
+### Release-build check — [unverified], and how to finish it
+
+Compile-out rests on `kDebugMode` being `const` (`!dart.vm.product`): with a false constant, the `NetworkLogClient` /
+`NetworkLogShakeListener` branches in `main.dart` are dead, and nothing else references `lib/debug/`, so the release
+AOT compiler tree-shakes them [inferred from Dart's AOT semantics — not confirmed on a binary]. The binary check was
+attempted and **did not complete**: `flutter build apk --release --target-platform android-arm64` failed on this
+machine for environment reasons unrelated to the code (the Flutter cache has no
+`engine/android-arm64-release/darwin-x64/gen_snapshot`, and icon-font subsetting was killed with -9 after ~39 min).
+To finish it: `flutter precache --android`, rebuild, then
+`unzip -p build/app/outputs/flutter-apk/app-release.apk lib/arm64-v8a/libapp.so > /tmp/libapp.so` and
+`strings -a /tmp/libapp.so | grep -cE 'NetworkLogClient|NetworkLogShakeListener|Network log \(debug build\)'`
+should print 0, while `grep -c 'Forgot password?'` (live code, the control) prints more than 0. (Release builds aren't
+obfuscated here, so class names survive in the snapshot when they're kept.) `sensors_plus`' native plugin stays in
+release regardless — liveness depends on it — but nothing subscribes to it for shakes.
+
+### Follow-up (2026-09-27): the seeded dev agent now signs in as `tagent` / `test#123`
+
+Renamed at the user's request in the dev Keycloak (the realm has `editUsernameAllowed: false`; it was switched on for
+the rename only and set back to false). Same Keycloak user, same agent (`826dfc90-f28b-4dde-806e-f15ab51c8e84` is still
+its agent id — `liveness_attempts_live_test.dart` uses it as such), so the backend still resolves the token to it
+[verified: `GET /clients` -> Awash Bank]. Every live test and `tool/record_stac_fixtures.sh` now use the new
+credentials; the live tier is unchanged (24 passed, the same 4 pre-existing failures) [verified].
+**Accepted limitation:** the backend finds an agent for `/auth/password/change` and `/auth/otp/*` by parsing the
+username as the agent's UUID (`find_contact_by_username`), so for THIS account those flows now act as if the account
+doesn't exist — change password is a 401, a code request sends nothing (still the generic 200). Sign-in and the rest of
+the app are unaffected. Test the password flows with a freshly hired agent (UUID username) instead.
+
+### Follow-up (2026-09-27): the app now runs on the real backend (`ApiClientImpl`), not `MockApiClient`
+
+Found from the device: the network log "wasn't capturing" because only `/auth/*` went over HTTP — clients,
+workflows, the form and sync all ran on `MockApiClient` (its client list, "Awash Bank, Dashen Bank", is mock data;
+the dev backend has only Awash Bank). At the user's request, `main.dart` now builds `ApiClientImpl` through the
+same logged `http.Client` as auth, with `onUnauthorized: authNotifier.forceLogout` — the wiring that had been
+commented out since "Building ApiClientImpl". `MockApiClient` stays in `api_client.dart` for tests/offline demos.
+[verified: offline suite 449 passed, analyze clean; `GET /clients/{awash}/workflows` as `tagent` returns
+"KYC/KYB collection"]. [unverified on device.] Known risk carried over from the live tier: the Stac live test
+fails on "no live resolver registered for dynamicConfig.endpoint", so a DYNAMIC dropdown in the real flow may
+show an error — a backend-side gap, not this change.
+
+Two device bugs fixed the same day, both pre-existing and only reachable in the full app (each now has a
+regression test that reproduced the device error first): `_startFlow` pushed with `SduiDemoApp`'s own context,
+above `MaterialApp`'s Navigator (`test/main_navigation_test.dart`); and `syncNotifierProvider` lacked
+`dependencies: [syncRepositoryProvider]`, so under main.dart's root scope it ignored `SyncScreen`'s nested
+override (`sync_screen_test.dart`, "works nested under an app-level ProviderScope").

@@ -15,7 +15,7 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:sdui_demo/features/auth/data/keycloak_auth_repository_impl.dart';
+import 'package:sdui_demo/features/auth/data/backend_auth_repository_impl.dart';
 import 'package:sdui_demo/features/sync/data/sync_repository_impl.dart';
 import 'package:sdui_demo/features/sync/domain/sync_status.dart';
 import 'package:sdui_demo/services/api_client_impl.dart';
@@ -23,9 +23,8 @@ import 'package:sdui_demo/services/api_http_client.dart';
 import 'package:sdui_demo/services/app_exception.dart';
 
 const _backend = 'http://127.0.0.1:8000';
-const _keycloak = 'http://127.0.0.1:8080';
-const _agentUsername = '826dfc90-f28b-4dde-806e-f15ab51c8e84';
-const _agentPassword = 'dev-agent-password-123';
+const _agentUsername = 'tagent';
+const _agentPassword = 'test#123';
 final _uuid = RegExp(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$');
 
 class _InMemorySecureStorage extends FlutterSecureStoragePlatform {
@@ -48,7 +47,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late bool reachable;
   late ApiClientImpl api;
-  late KeycloakAuthRepositoryImpl auth;
+  late BackendAuthRepositoryImpl auth;
   late String clientId;
   late String workflowId;
   late File image;
@@ -71,7 +70,7 @@ void main() {
       return;
     }
     FlutterSecureStoragePlatform.instance = _InMemorySecureStorage();
-    auth = KeycloakAuthRepositoryImpl(keycloakBaseUrl: _keycloak);
+    auth = BackendAuthRepositoryImpl(baseUrl: _backend);
     await auth.login(username: _agentUsername, password: _agentPassword);
     api = ApiClientImpl(httpClient: ApiHttpClient(baseUrl: _backend), authTokenProvider: auth);
     final client = (await api.fetchClients()).firstWhere((c) => c.name == 'Awash Bank');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sdui_demo/features/sync/data/sync_repository_impl.dart';
@@ -36,6 +37,27 @@ class _FakeSyncRepository implements SyncRepository {
 }
 
 void main() {
+  // Regression, found on a real device: in the app SyncScreen sits UNDER
+  // main.dart's root ProviderScope, so its own ProviderScope is a nested one.
+  // syncNotifierProvider must declare syncRepositoryProvider as a dependency
+  // or Riverpod resolves it in the root scope, where the repository was never
+  // overridden ("syncRepositoryProvider has no default"). Every other test
+  // here pumps SyncScreen with no outer scope, which is why none caught it.
+  testWidgets('works nested under an app-level ProviderScope, as in main.dart', (tester) async {
+    final session = FakeFlowSession(apiClient: FakeApiClient());
+    final repository = _FakeSyncRepository([const SyncSucceeded()]);
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp(home: SyncScreen(controller: session, repository: repository))),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(repository.submitCaseCallCount, 1);
+    expect(find.text('Case synced successfully'), findsOneWidget);
+  });
+
   testWidgets('renders progress from the injected repository, then success', (tester) async {
     final session = FakeFlowSession(apiClient: FakeApiClient());
     final repository = _FakeSyncRepository([

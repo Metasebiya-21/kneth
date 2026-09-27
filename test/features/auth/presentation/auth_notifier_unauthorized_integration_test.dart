@@ -8,7 +8,7 @@
 //
 // The AuthTokenProvider handing ApiClientImpl its (valid-looking) token and
 // the AuthRepository backing AuthNotifier are deliberately two separate
-// fakes here, not one dual-purpose object the way KeycloakAuthRepositoryImpl
+// fakes here, not one dual-purpose object the way BackendAuthRepositoryImpl
 // is in production (NOTES.md's Phase 1) — what this test exercises is the
 // callback plumbing between the two, which doesn't depend on them sharing a
 // single underlying token store.

@@ -1,4 +1,5 @@
-/// A Keycloak token pair, plus when the access token stops being valid.
+/// An access/refresh token pair (Keycloak-issued, obtained through the
+/// backend's `/auth` proxy), plus when the access token stops being valid.
 /// Pure data — parsing the token endpoint's JSON response into this shape
 /// happens in data/, not here.
 class AuthToken {
@@ -12,7 +13,7 @@ class AuthToken {
     required this.expiresAt,
   });
 
-  /// True once [expiresAt] has passed. [KeycloakAuthRepositoryImpl]'s
+  /// True once [expiresAt] has passed. `AuthNotifier`'s
   /// background refresh checks a buffered version of this (see its own
   /// doc comment) so a call rarely has to discover expiry the hard way,
   /// via a real 401 — but a 401 is still handled correctly if one slips

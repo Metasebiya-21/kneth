@@ -15,10 +15,9 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:sdui_demo/features/auth/data/keycloak_auth_repository_impl.dart';
+import 'package:sdui_demo/features/auth/data/backend_auth_repository_impl.dart';
 
 const _backend = 'http://127.0.0.1:8000';
-const _keycloak = 'http://127.0.0.1:8080';
 const _clientId = 'e8ce7cac-22fb-4858-8328-bd62297c7e75';
 const _adminAgentId = '5c1a7d2e-0b6a-4e57-9a11-7f0d0e5a0001';
 
@@ -52,7 +51,7 @@ void main() {
 
   Future<String> loginAs(String username, String password) async {
     FlutterSecureStoragePlatform.instance = _InMemorySecureStorage();
-    final auth = KeycloakAuthRepositoryImpl(keycloakBaseUrl: _keycloak);
+    final auth = BackendAuthRepositoryImpl(baseUrl: _backend);
     await auth.login(username: username, password: password);
     return auth.currentToken()!;
   }
@@ -117,7 +116,7 @@ void main() {
 
   test('the same routes are refused for the ordinary dev agent (a plain agent, not a platform admin)', () async {
     if (!reachable) return;
-    final agent = await loginAs('826dfc90-f28b-4dde-806e-f15ab51c8e84', 'dev-agent-password-123');
+    final agent = await loginAs('tagent', 'test#123');
     final headers = {'Authorization': 'Bearer $agent', 'Content-Type': 'application/json'};
     final target = _uuid();
     final url = '$_backend/operations/agents/$target/clients/$_clientId/assignment';

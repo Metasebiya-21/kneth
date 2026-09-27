@@ -16,8 +16,8 @@
 set -euo pipefail
 BACKEND=${BACKEND:-http://127.0.0.1:8000}
 KEYCLOAK=${KEYCLOAK:-http://127.0.0.1:8080}
-AGENT_USER=${AGENT_USER:-826dfc90-f28b-4dde-806e-f15ab51c8e84}
-AGENT_PASS=${AGENT_PASS:-dev-agent-password-123}
+AGENT_USER=${AGENT_USER:-tagent}
+AGENT_PASS=${AGENT_PASS:-test#123}
 CLIENT_ID=${CLIENT_ID:-e8ce7cac-22fb-4858-8328-bd62297c7e75}
 WORKFLOW_ID=${WORKFLOW_ID:-340f410e-9493-4e02-a2c9-1acfc9a58372}
 OUT="$(cd "$(dirname "$0")/.." && pwd)/test/fixtures/stac"
@@ -25,7 +25,7 @@ mkdir -p "$OUT"
 
 TOKEN=$(curl -sf -X POST "$KEYCLOAK/realms/onboarding/protocol/openid-connect/token" \
   -d grant_type=password -d client_id=onboarding-platform \
-  -d "username=$AGENT_USER" -d "password=$AGENT_PASS" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+  --data-urlencode "username=$AGENT_USER" --data-urlencode "password=$AGENT_PASS" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 
 post() { curl -sf -X POST "$BACKEND$1" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d "$2"; }
 

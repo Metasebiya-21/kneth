@@ -1,1 +1,197 @@
-[{"stageId":"fayda_verification","title":"Fayda verification","screenType":"GENERIC_FORM","fields":[{"key":"fayda_number","label":"Fayda number","type":"TEXT","inputMode":"FREE","property":{"order":1,"isRequired":true,"isHidden":false,"regex":"^\\d{16}$"}},{"key":"region","label":"Region","type":"SELECT","inputMode":"ENUM","property":{"order":2,"isRequired":true,"isHidden":false,"options":[{"label":"Addis Ababa","value":"addis_ababa"},{"label":"Oromia","value":"oromia"},{"label":"Amhara","value":"amhara"},{"label":"Tigray","value":"tigray"},{"label":"Sidama","value":"sidama"},{"label":"Somali","value":"somali"}]}},{"key":"district","label":"District","type":"SELECT","inputMode":"DYNAMIC","property":{"order":3,"isRequired":true,"isHidden":false,"dependsOn":["region"],"dynamicConfig":{"endpoint":"/options/regions/{region}/districts","method":"GET"}}}]},{"stageId":"identification_card","title":"Identification card","screenType":"NATIVE_CAPTURE","nativeHandler":"photo_capture","fields":[]},{"stageId":"personal_info","title":"Personal information","screenType":"GENERIC_FORM","fields":[{"key":"full_name","label":"Full Name","type":"TEXT","inputMode":"FREE","consentRequired":true,"property":{"order":1,"isRequired":true,"isHidden":false,"minLen":3,"maxLen":64,"regex":"^[\\p{L}\\p{M}\\s/'.-]{1,64}$"}},{"key":"mother_name","label":"Mother Name","type":"TEXT","inputMode":"FREE","property":{"order":2,"isRequired":true,"isHidden":false,"minLen":3,"maxLen":64,"regex":"^[\\p{L}\\p{M}\\s/'.-]{1,64}$"}},{"key":"language_preference","label":"Language Preference","type":"SELECT","inputMode":"ENUM","prefill":"amharic","property":{"order":3,"isRequired":true,"isHidden":false,"options":[{"label":"Amharic","value":"amharic"},{"label":"English","value":"english"},{"label":"Afan Oromifa","value":"afan_oromo"},{"label":"Tigrigna","value":"tigrigna"}]}}]},{"stageId":"consent_signature","title":"Consent signature","screenType":"NATIVE_CAPTURE","nativeHandler":"signature_capture","fields":[]},{"stageId":"association_details","title":"Association details","screenType":"GENERIC_FORM","fields":[{"key":"association_type","label":"Association type","type":"SELECT","inputMode":"ENUM","property":{"order":1,"isRequired":true,"isHidden":false,"options":[{"label":"Individual","value":"Individual"},{"label":"Group","value":"Group"}]}},{"key":"company_name","label":"Company name","type":"TEXT","inputMode":"FREE","property":{"order":2,"isRequired":false,"isHidden":true,"dependsOn":["association_type"],"conditionalDependency":{"if":[{"field":"association_type","op":"eq","value":"Group"}],"then":{"isRequired":true,"isHidden":false},"else":{"isRequired":false,"isHidden":true}}}}]}]
+[
+    {
+        "stageId": "fayda_verification",
+        "title": "Fayda verification",
+        "screenType": "GENERIC_FORM",
+        "fields": [
+            {
+                "key": "fayda_number",
+                "label": "Fayda number",
+                "type": "TEXT",
+                "inputMode": "FREE",
+                "property": {
+                    "order": 1,
+                    "isRequired": true,
+                    "isHidden": false,
+                    "regex": "^\\d{16}$"
+                }
+            },
+            {
+                "key": "region",
+                "label": "Region",
+                "type": "SELECT",
+                "inputMode": "ENUM",
+                "property": {
+                    "order": 2,
+                    "isRequired": true,
+                    "isHidden": false,
+                    "options": [
+                        {
+                            "label": "Addis Ababa",
+                            "value": "addis_ababa"
+                        },
+                        {
+                            "label": "Oromia",
+                            "value": "oromia"
+                        },
+                        {
+                            "label": "Amhara",
+                            "value": "amhara"
+                        },
+                        {
+                            "label": "Tigray",
+                            "value": "tigray"
+                        },
+                        {
+                            "label": "Sidama",
+                            "value": "sidama"
+                        },
+                        {
+                            "label": "Somali",
+                            "value": "somali"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "stageId": "identification_card",
+        "title": "Identification card",
+        "screenType": "NATIVE_CAPTURE",
+        "nativeHandler": "photo_capture",
+        "fields": []
+    },
+    {
+        "stageId": "personal_info",
+        "title": "Personal information",
+        "screenType": "GENERIC_FORM",
+        "fields": [
+            {
+                "key": "full_name",
+                "label": "Full Name",
+                "type": "TEXT",
+                "inputMode": "FREE",
+                "consentRequired": true,
+                "property": {
+                    "order": 1,
+                    "isRequired": true,
+                    "isHidden": false,
+                    "minLen": 3,
+                    "maxLen": 64,
+                    "regex": "^[\\p{L}\\p{M}\\s/'.-]{1,64}$"
+                }
+            },
+            {
+                "key": "mother_name",
+                "label": "Mother Name",
+                "type": "TEXT",
+                "inputMode": "FREE",
+                "property": {
+                    "order": 2,
+                    "isRequired": true,
+                    "isHidden": false,
+                    "minLen": 3,
+                    "maxLen": 64,
+                    "regex": "^[\\p{L}\\p{M}\\s/'.-]{1,64}$"
+                }
+            },
+            {
+                "key": "language_preference",
+                "label": "Language Preference",
+                "type": "SELECT",
+                "inputMode": "ENUM",
+                "prefill": "amharic",
+                "property": {
+                    "order": 3,
+                    "isRequired": true,
+                    "isHidden": false,
+                    "options": [
+                        {
+                            "label": "Amharic",
+                            "value": "amharic"
+                        },
+                        {
+                            "label": "English",
+                            "value": "english"
+                        },
+                        {
+                            "label": "Afan Oromifa",
+                            "value": "afan_oromo"
+                        },
+                        {
+                            "label": "Tigrigna",
+                            "value": "tigrigna"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "stageId": "consent_signature",
+        "title": "Consent signature",
+        "screenType": "NATIVE_CAPTURE",
+        "nativeHandler": "signature_capture",
+        "fields": []
+    },
+    {
+        "stageId": "association_details",
+        "title": "Association details",
+        "screenType": "GENERIC_FORM",
+        "fields": [
+            {
+                "key": "association_type",
+                "label": "Association type",
+                "type": "SELECT",
+                "inputMode": "ENUM",
+                "property": {
+                    "order": 1,
+                    "isRequired": true,
+                    "isHidden": false,
+                    "options": [
+                        {
+                            "label": "Individual",
+                            "value": "Individual"
+                        },
+                        {
+                            "label": "Group",
+                            "value": "Group"
+                        }
+                    ]
+                }
+            },
+            {
+                "key": "company_name",
+                "label": "Company name",
+                "type": "TEXT",
+                "inputMode": "FREE",
+                "property": {
+                    "order": 2,
+                    "isRequired": false,
+                    "isHidden": true,
+                    "dependsOn": [
+                        "association_type"
+                    ],
+                    "conditionalDependency": {
+                        "if": [
+                            {
+                                "field": "association_type",
+                                "op": "eq",
+                                "value": "Group"
+                            }
+                        ],
+                        "then": {
+                            "isRequired": true,
+                            "isHidden": false
+                        },
+                        "else": {
+                            "isRequired": false,
+                            "isHidden": true
+                        }
+                    }
+                }
+            }
+        ]
+    }
+]

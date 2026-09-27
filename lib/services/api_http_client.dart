@@ -215,6 +215,10 @@ class ApiHttpClient {
       throw ClientException(status, _extractMessage(response));
     }
 
+    // A 2xx with no body at all (the backend's `POST /auth/logout` is a 204)
+    // is a success with nothing to say, not an unparseable response.
+    if (response.body.isEmpty) return <String, dynamic>{};
+
     try {
       return jsonDecode(response.body);
     } on FormatException {
@@ -226,6 +230,23 @@ class ApiHttpClient {
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map && decoded['message'] is String) return decoded['message'] as String;
+      // FastAPI's own request-validation 422 (a schema check that fails before
+      // any route code runs, e.g. `/auth/password/reset`'s 8-character minimum)
+      // is `{"detail": [{"loc": [..., "field"], "msg": "..."}]}`, not this
+      // backend's `{"message": ...}` convention. Only `loc`/`msg` are read —
+      // never `input`, which echoes the rejected value (a password, here).
+      final detail = decoded is Map ? decoded['detail'] : null;
+      if (detail is String) return detail;
+      if (detail is List && detail.isNotEmpty) {
+        final messages = [
+          for (final item in detail)
+            if (item is Map && item['msg'] is String)
+              item['loc'] is List && (item['loc'] as List).isNotEmpty
+                  ? '${(item['loc'] as List).last}: ${item['msg']}'
+                  : item['msg'] as String,
+        ];
+        if (messages.isNotEmpty) return messages.join('\n');
+      }
     } on FormatException {
       // Body wasn't JSON at all — no message to extract, fall through.
     }

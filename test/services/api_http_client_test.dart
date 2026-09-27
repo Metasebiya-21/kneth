@@ -210,4 +210,43 @@ void main() {
       );
     });
   });
+
+  group('backend auth-route shapes (added with the /auth proxy)', () {
+    test('an empty 2xx body (POST /auth/logout is a 204) is an empty map, not a ParseException', () async {
+      final client = _clientWith(MockClient((_) async => http.Response('', 204)));
+      expect(await client.request(method: 'POST', path: '/auth/logout', body: {'refresh_token': 'r'}), isEmpty);
+    });
+
+    test('FastAPI\'s {"detail": [...]} 422 becomes "field: msg", never exposing the echoed input', () async {
+      final client = _clientWith(MockClient((_) async => http.Response(
+            jsonEncode({
+              'detail': [
+                {'loc': ['body', 'new_password'], 'msg': 'String should have at least 8 characters', 'input': 'hunter2'},
+              ],
+            }),
+            422,
+          )));
+      await expectLater(
+        client.request(method: 'POST', path: '/x'),
+        throwsA(isA<ClientException>()
+            .having((e) => e.message, 'message', 'new_password: String should have at least 8 characters')
+            .having((e) => e.message, 'message', isNot(contains('hunter2')))),
+      );
+    });
+
+    test('a {"message": ...} body still wins over detail, and a plain-string detail is used as-is', () async {
+      var client = _clientWith(MockClient((_) async => http.Response(jsonEncode({'detail': 'Not Found'}), 404)));
+      await expectLater(
+        client.request(method: 'GET', path: '/x'),
+        throwsA(isA<ClientException>().having((e) => e.message, 'message', 'Not Found')),
+      );
+      client = _clientWith(MockClient(
+        (_) async => http.Response(jsonEncode({'message': 'bad field', 'detail': 'ignored'}), 422),
+      ));
+      await expectLater(
+        client.request(method: 'GET', path: '/x'),
+        throwsA(isA<ClientException>().having((e) => e.message, 'message', 'bad field')),
+      );
+    });
+  });
 }
